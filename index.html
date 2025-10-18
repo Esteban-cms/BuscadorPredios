@@ -3,53 +3,175 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visor de Predios - Briceño Antioquia</title>
+  <title>Buscador de Predios - Briceño Antioquia</title>
+
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Estilos -->
   <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     #map { width: 100%; height: 100%; }
+    #buscador {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    #buscador input {
+      width: 250px;
+      padding: 5px;
+    }
+    #sugerencias {
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 2px;
+      border-radius: 5px;
+      display: none;
+    }
+    #sugerencias div {
+      padding: 5px;
+      cursor: pointer;
+    }
+    #sugerencias div:hover {
+      background: #f0f0f0;
+    }
+    #btnHome {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      border: 2px solid #0078A8;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
   </style>
 </head>
 <body>
 
+<div id="buscador">
+  🔍 <input type="text" id="inputBusqueda" placeholder="Buscar PK_PREDIOS..." />
+  <div id="sugerencias"></div>
+</div>
+<div id="btnHome" title="Volver al inicio">🏠</div>
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   // Crear mapa centrado en Briceño
   var map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Agregar mapa base de OpenStreetMap
+  // Agregar mapa base
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
   }).addTo(map);
 
+  // Variables globales
+  var capaPredios;
+  var resaltado;
+  var boundsInicial;
+
   // Cargar capa GeoJSON
-  fetch('Predios_Usos_Unidos.geojson')
-    .then(response => response.json())
+  fetch('Predios_Usos_Unidos_4326.geojson')
+    .then(res => res.json())
     .then(data => {
-      var capaPredios = L.geoJSON(data, {
+      capaPredios = L.geoJSON(data, {
         style: {
-          color: 'blue',
+          color: '#2262CC',
           weight: 1,
-          fillColor: 'cyan',
+          fillColor: '#66CCFF',
           fillOpacity: 0.4
+        },
+        onEachFeature: function(feature, layer) {
+          let info = `
+            <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
+            <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
+            <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
+          `;
+          layer.bindPopup(info);
         }
       }).addTo(map);
 
-      // Ajustar mapa para ver todos los predios
-      var bounds = capaPredios.getBounds();
-      if (bounds.isValid()) {
-        map.fitBounds(bounds);
-      } else {
-        alert("⚠️ El GeoJSON no tiene coordenadas válidas o está en otro sistema de referencia (debe ser EPSG:4326)");
-      }
-    })
-    .catch(error => {
-      console.error("Error al cargar el GeoJSON:", error);
-      alert("No se pudo cargar el archivo Predios_Usos_Unidos.geojson");
+      boundsInicial = capaPredios.getBounds();
+      if (boundsInicial.isValid()) map.fitBounds(boundsInicial);
+
+      inicializarBuscador(data.features);
     });
+
+  // Inicializar buscador con autocompletado
+  function inicializarBuscador(features) {
+    const input = document.getElementById("inputBusqueda");
+    const sugerencias = document.getElementById("sugerencias");
+
+    input.addEventListener("input", function() {
+      const texto = this.value.toLowerCase();
+      sugerencias.innerHTML = "";
+      if (texto.length < 1) {
+        sugerencias.style.display = "none";
+        return;
+      }
+      const coincidencias = features.filter(f => 
+        f.properties.PK_PREDIOS.toLowerCase().includes(texto)
+      ).slice(0, 10);
+
+      coincidencias.forEach(f => {
+        const div = document.createElement("div");
+        div.textContent = f.properties.PK_PREDIOS;
+        div.onclick = () => seleccionarPredio(f);
+        sugerencias.appendChild(div);
+      });
+
+      sugerencias.style.display = coincidencias.length ? "block" : "none";
+    });
+  }
+
+  // Seleccionar y resaltar predio
+  function seleccionarPredio(feature) {
+    const sugerencias = document.getElementById("sugerencias");
+    sugerencias.style.display = "none";
+    document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
+
+    if (resaltado) map.removeLayer(resaltado);
+
+    resaltado = L.geoJSON(feature, {
+      style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
+    }).addTo(map);
+
+    const popupInfo = `
+      <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
+      <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
+      <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
+    `;
+    resaltado.bindPopup(popupInfo).openPopup();
+
+    map.fitBounds(resaltado.getBounds().pad(1));
+  }
+
+  // Botón para volver al inicio
+  document.getElementById("btnHome").onclick = function() {
+    if (resaltado) map.removeLayer(resaltado);
+    document.getElementById("inputBusqueda").value = "";
+    if (boundsInicial && boundsInicial.isValid()) {
+      map.fitBounds(boundsInicial);
+    } else {
+      map.setView([7.132, -75.569], 13);
+    }
+  };
 </script>
 
 </body>
