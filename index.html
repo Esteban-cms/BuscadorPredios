@@ -78,8 +78,8 @@
   background: linear-gradient(90deg, #ff416c, #ff4b2b); /* degradado rosa-naranja */
   color: white;
   border: none;
-  width: 45px;
-  height: 40px;
+  width: 50px;
+  height: 100%;
   border-radius: 0 25px 25px 0;
   cursor: pointer;
   display: flex;
@@ -94,7 +94,9 @@
 
 #btnBuscar i {
   font-size: 18px;
+  color: white; /* 🔥 asegura que la lupa se vea blanca */
 }
+
 
 #sugerencias {
   background: white;
@@ -161,7 +163,7 @@
     Explorador Rural - Briceño Antioquia
   </div>
 
- <!-- 🔍 Buscador moderno -->
+<!-- 🔍 Buscador moderno -->
 <div id="buscador">
   <div class="search-box">
     <input 
@@ -176,6 +178,7 @@
   </div>
   <div id="sugerencias"></div>
 </div>
+
 
   <!-- Botones -->
 <button id="btnHome" title="Volver al inicio">🏠</button>
@@ -328,6 +331,7 @@ function seleccionarPredio(feature) {
   </script>
 </body>
 </html>
+
 
 
 
