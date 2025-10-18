@@ -45,7 +45,7 @@
       width: 28px;
       height: 28px;
     }
-/* 🔍 Buscador moderno con lupa blanca */
+/* 🔍 Buscador moderno corregido */
 #buscador {
   position: absolute;
   top: 70px;
@@ -57,7 +57,7 @@
 
 .search-box {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   border-radius: 25px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
@@ -66,18 +66,19 @@
 
 #buscador input {
   flex: 1;
-  padding: 10px 15px;
+  padding: 12px 15px;
   font-size: 14px;
   border: none;
   outline: none;
   border-radius: 25px 0 0 25px;
+  height: 44px;
 }
 
 #btnBuscar {
-  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* Degradado naranja/rosa */
+  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* Degradado rosa/naranja */
   border: none;
   width: 55px;
-  height: 42px; /* ✅ altura consistente con el input */
+  height: 44px; /* ✅ igual altura que el input */
   border-radius: 0 25px 25px 0;
   cursor: pointer;
   display: flex;
@@ -92,10 +93,9 @@
 }
 
 #btnBuscar i {
-  color: white; /* ✅ Lupa blanca */
+  color: white; /* ✅ lupa blanca */
   font-size: 18px;
 }
-
 
 #sugerencias {
   background: white;
@@ -161,7 +161,6 @@
     <img src="https://cdn-icons-png.flaticon.com/512/765/765541.png" alt="matica">
     Explorador Rural - Briceño Antioquia
   </div>
-
 <!-- 🔍 Buscador moderno -->
 <div id="buscador">
   <div class="search-box">
@@ -171,7 +170,7 @@
       placeholder="Buscar matrícula PK_PREDIOS..." 
       autocomplete="off" 
     />
-    <button id="btnBuscar">
+    <button id="btnBuscar" title="Buscar">
       <i class="fas fa-search"></i>
     </button>
   </div>
@@ -330,6 +329,7 @@ function seleccionarPredio(feature) {
   </script>
 </body>
 </html>
+
 
 
 
