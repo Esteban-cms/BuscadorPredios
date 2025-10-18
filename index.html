@@ -46,7 +46,7 @@
       height: 28px;
     }
 
-    /* Buscador moderno */
+   /* Buscador moderno tipo barra con lupa */
 #buscador {
   position: absolute;
   top: 70px;
@@ -62,6 +62,7 @@
   border-radius: 25px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  background: white;
 }
 
 #buscador input {
@@ -74,7 +75,7 @@
 }
 
 #btnBuscar {
-  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* degradado rosa/naranja */
+  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* degradado rosa-naranja */
   color: white;
   border: none;
   width: 45px;
@@ -115,6 +116,7 @@
 #sugerencias div:hover {
   background: #f2f2f2;
 }
+
 
     /* Botones del mapa */
     #btnHome, #btnLocate {
@@ -159,27 +161,21 @@
     Explorador Rural - Briceño Antioquia
   </div>
 
-  <!-- 🔍 Buscador -->
+ <!-- 🔍 Buscador moderno -->
 <div id="buscador">
-  <div style="display: flex; align-items: center; gap: 8px;">
+  <div class="search-box">
     <input 
       type="text" 
       id="inputBusqueda" 
-      placeholder="🔍 Buscar matrícula PK_PREDIOS..." 
+      placeholder="Buscar matrícula PK_PREDIOS..." 
       autocomplete="off" 
-      style="flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;"
     />
-    <button 
-      id="btnBuscar" 
-      title="Buscar predio" 
-      style="background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: white; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: 0.3s;"
-    >
+    <button id="btnBuscar">
       <i class="fas fa-search"></i>
     </button>
   </div>
   <div id="sugerencias"></div>
 </div>
-
 
   <!-- Botones -->
 <button id="btnHome" title="Volver al inicio">🏠</button>
@@ -332,6 +328,7 @@ function seleccionarPredio(feature) {
   </script>
 </body>
 </html>
+
 
 
 
