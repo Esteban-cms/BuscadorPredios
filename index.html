@@ -9,10 +9,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Íconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Font Awesome -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-  <!-- Estilos -->
   <style>
     html, body {
       height: 100%;
@@ -25,7 +24,7 @@
       height: 100%;
     }
 
-    /* 🌿 Encabezado verde agrícola */
+    /* 🌽 Encabezado */
     #encabezado {
       position: absolute;
       top: 0;
@@ -37,7 +36,6 @@
       padding: 12px 0;
       font-size: 20px;
       font-weight: bold;
-      letter-spacing: 0.5px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -49,41 +47,54 @@
       font-size: 24px;
     }
 
-    /* Buscador */
+    /* 🔍 Buscador con icono */
     #buscador {
       position: absolute;
       top: 70px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.97);
-      padding: 12px 16px;
+      padding: 10px 16px;
       border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
       z-index: 1000;
       width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #buscador .search-icon {
+      color: #2e7d32;
+      font-size: 18px;
     }
     #buscador input {
       width: 100%;
-      padding: 8px 10px;
+      padding: 8px;
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 6px;
       outline: none;
-      transition: box-shadow 0.2s;
+      transition: 0.2s;
     }
     #buscador input:focus {
-      box-shadow: 0 0 5px #66aaff;
-      border-color: #66aaff;
+      border-color: #43a047;
+      box-shadow: 0 0 5px #43a047;
     }
+
+    /* Lista de sugerencias */
     #sugerencias {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      right: 0;
       background: white;
       border: 1px solid #ccc;
       max-height: 150px;
       overflow-y: auto;
-      margin-top: 4px;
       border-radius: 6px;
       display: none;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 999;
     }
     #sugerencias div {
       padding: 6px 10px;
@@ -92,10 +103,10 @@
       transition: background 0.2s;
     }
     #sugerencias div:hover {
-      background: #f0f8ff;
+      background: #e8f5e9;
     }
 
-    /* Botón inicio */
+    /* 🏠 Botón inicio */
     #btnHome {
       position: absolute;
       top: 80px;
@@ -138,25 +149,24 @@
 
 <!-- 🔍 Buscador -->
 <div id="buscador">
-  <i class="fa-solid fa-magnifying-glass"></i>
+  <div class="search-icon"><i class="fas fa-search"></i></div>
   <input type="text" id="inputBusqueda" placeholder="Insertar matrícula predial..." autocomplete="off" />
   <div id="sugerencias"></div>
 </div>
 
 <!-- 🏠 Botón inicio -->
-<div id="btnHome" title="Volver al inicio"><i class="fa-solid fa-house"></i></div>
+<div id="btnHome" title="Volver al inicio"><i class="fas fa-home"></i></div>
 
 <!-- 🗺️ Mapa -->
 <div id="map"></div>
 
 <script>
-  // Crear mapa centrado en Briceño
   var map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Mapa base OSM
+  // Capa base OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+    attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
   var capaPredios, resaltado, boundsInicial;
@@ -214,7 +224,7 @@
     });
   }
 
-  // Selección de predio
+  // Seleccionar predio
   function seleccionarPredio(feature) {
     const sugerencias = document.getElementById("sugerencias");
     sugerencias.style.display = "none";
