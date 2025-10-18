@@ -46,61 +46,75 @@
       height: 28px;
     }
 
-    /* Buscador */
-    #buscador {
-      position: absolute;
-      top: 70px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      width: 300px;
-      background: white;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-    }
+    /* Buscador moderno */
+#buscador {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 320px;
+}
 
-    #buscador input {
-      width: 85%;
-      padding: 6px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      outline: none;
-    }
+.search-box {
+  display: flex;
+  align-items: center;
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
 
-    #buscador button {
-      border: none;
-      background: #2ECC71;
-      color: white;
-      border-radius: 5px;
-      padding: 6px 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
+#buscador input {
+  flex: 1;
+  padding: 10px 15px;
+  font-size: 14px;
+  border: none;
+  outline: none;
+  border-radius: 25px 0 0 25px;
+}
 
-    #buscador button:hover {
-      background: #27ae60;
-    }
+#btnBuscar {
+  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* degradado rosa/naranja */
+  color: white;
+  border: none;
+  width: 45px;
+  height: 40px;
+  border-radius: 0 25px 25px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s;
+}
 
-    #sugerencias {
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      max-height: 150px;
-      overflow-y: auto;
-      margin-top: 5px;
-      display: none;
-    }
+#btnBuscar:hover {
+  background: linear-gradient(90deg, #ff4b2b, #ff416c);
+}
 
-    #sugerencias div {
-      padding: 5px;
-      cursor: pointer;
-    }
+#btnBuscar i {
+  font-size: 18px;
+}
 
-    #sugerencias div:hover {
-      background: #f0f0f0;
-    }
+#sugerencias {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-top: 5px;
+  display: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+#sugerencias div {
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#sugerencias div:hover {
+  background: #f2f2f2;
+}
 
     /* Botones del mapa */
     #btnHome, #btnLocate {
@@ -145,14 +159,27 @@
     Explorador Rural - Briceño Antioquia
   </div>
 
-  <!-- Buscador -->
-  <div id="buscador">
-    <div style="display:flex;align-items:center;gap:5px;">
-      <input type="text" id="inputBusqueda" placeholder="Buscar matrícula PK_PREDIOS..." autocomplete="off" />
-      <button id="btnBuscar"><i class="fas fa-search"></i></button>
-    </div>
-    <div id="sugerencias"></div>
+  <!-- 🔍 Buscador -->
+<div id="buscador">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <input 
+      type="text" 
+      id="inputBusqueda" 
+      placeholder="🔍 Buscar matrícula PK_PREDIOS..." 
+      autocomplete="off" 
+      style="flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;"
+    />
+    <button 
+      id="btnBuscar" 
+      title="Buscar predio" 
+      style="background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: white; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: 0.3s;"
+    >
+      <i class="fas fa-search"></i>
+    </button>
   </div>
+  <div id="sugerencias"></div>
+</div>
+
 
   <!-- Botones -->
 <button id="btnHome" title="Volver al inicio">🏠</button>
@@ -305,6 +332,7 @@ function seleccionarPredio(feature) {
   </script>
 </body>
 </html>
+
 
 
 
