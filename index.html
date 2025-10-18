@@ -1,276 +1,171 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Explorador Rural - Briceño Antioquia</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Explorador Rural – Briceño, Antioquia</title>
+
+  <!-- Font Awesome para los íconos -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
   <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; }
-    #map { width: 100%; height: 100%; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
 
-    /* Panel superior */
-    #panelBusqueda {
+    /* Título superior */
+    .titulo {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 1000;
-      text-align: center;
-    }
-
-    #titulo {
-      font-family: 'Segoe UI', sans-serif;
-      font-size: 18px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 6px 14px;
+      border-radius: 8px;
       font-weight: bold;
-      background: rgba(255,255,255,0.95);
-      border-radius: 10px;
-      padding: 6px 12px;
-      margin-bottom: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      color: #2E7D32;
-    }
-
-    /* Buscador amarillo moderno */
-    #buscador {
+      font-size: 1.1em;
+      z-index: 1000;
       display: flex;
       align-items: center;
-      background: linear-gradient(90deg, #ffc107, #ffca28);
-      border-radius: 50px;
-      padding: 10px 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      width: 420px;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Buscador */
+    .search-container {
+      position: absolute;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 25px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      padding: 5px 10px;
+      width: 280px;
       max-width: 90%;
-      margin: 0 auto;
-      position: relative;
     }
 
-    #buscador input {
-      flex: 1;
+    .search-container input {
       border: none;
-      border-radius: 20px;
-      padding: 10px 15px;
-      font-size: 16px;
       outline: none;
-      background: white;
-      color: #333;
-    }
-
-    #buscador .icon {
-      font-size: 20px;
-      margin: 0 10px;
-      cursor: pointer;
-    }
-
-    #buscador .click-icon {
-      position: absolute;
-      right: 60px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 24px;
-      pointer-events: none;
-      animation: clickPulse 1s ease infinite;
-      opacity: 0.7;
-    }
-
-    @keyframes clickPulse {
-      0% { transform: translateY(-50%) scale(1); opacity: 0.8; }
-      50% { transform: translateY(-50%) scale(1.1); opacity: 0.3; }
-      100% { transform: translateY(-50%) scale(1); opacity: 0.8; }
-    }
-
-    /* Sugerencias */
-    #sugerencias {
-      background: white;
-      border: 1px solid #ccc;
-      max-height: 120px;
-      overflow-y: auto;
-      margin-top: 4px;
-      border-radius: 10px;
-      display: none;
-      width: 420px;
-      margin-left: auto;
-      margin-right: auto;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      flex: 1;
+      padding: 6px 10px;
       font-size: 14px;
-      z-index: 1001;
+      border-radius: 20px;
     }
 
-    #sugerencias div {
-      padding: 10px;
-      cursor: pointer;
-      transition: background 0.2s;
+    .search-container .search-icon {
+      color: #444;
+      margin-right: 6px;
+      font-size: 16px;
     }
 
-    #sugerencias div:hover {
-      background: #f9f9f9;
-    }
-
-    /* Botón Home */
-    #btnHome {
+    /* Botón de inicio */
+    .home-button {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #0078A8;
-      color: white;
+      top: 120px;
+      left: 15px;
+      background-color: white;
       border: none;
       border-radius: 50%;
-      width: 44px;
-      height: 44px;
+      width: 38px;
+      height: 38px;
       cursor: pointer;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      transition: 0.2s;
-      z-index: 1001;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    .home-button i {
+      color: #333;
+      font-size: 18px;
     }
 
-    #btnHome:hover {
-      background: #005f82;
-      transform: scale(1.1);
+    @media (max-width: 600px) {
+      .titulo {
+        font-size: 0.95em;
+        padding: 4px 10px;
+      }
+      .search-container {
+        width: 90%;
+        top: 50px;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
 
-<!-- Panel -->
-<div id="panelBusqueda">
-  <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
-
-  <!-- Buscador visual moderno -->
-  <div id="buscador">
-    <div class="icon">🔍</div>
-    <input type="text" id="inputBusqueda" placeholder="Buscar por matrícula..." />
-    <div class="click-icon">🖱️</div>
-    <div class="icon" id="btnVoz" title="Buscar por voz">🎤</div>
+  <div class="search-container">
+    <div class="search-icon"><i class="fas fa-search"></i></div>
+    <input type="text" id="searchBox" placeholder="Insertar matrícula...">
   </div>
 
-  <!-- Autocompletado -->
-  <div id="sugerencias"></div>
-</div>
+  <button class="home-button" id="homeButton"><i class="fas fa-home"></i></button>
 
-<!-- Botón de inicio -->
-<button id="btnHome" title="Volver al inicio">🏠</button>
+  <div id="map"></div>
 
-<!-- Mapa -->
-<div id="map"></div>
+  <script>
+    // Inicializa el mapa centrado en Briceño
+    const map = L.map('map').setView([7.132, -75.569], 13);
 
-<script>
-  let map = L.map('map').setView([7.132, -75.569], 13);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-  }).addTo(map);
-
-  let capaPredios, resaltado, boundsInicial;
-
-  fetch('Predios_Usos_Unidos_4326.geojson')
-    .then(res => res.json())
-    .then(data => {
-      capaPredios = L.geoJSON(data, {
-        style: {
-          color: '#2262CC',
-          weight: 1,
-          fillColor: '#66CCFF',
-          fillOpacity: 0.4
-        }
-      }).addTo(map);
-
-      boundsInicial = capaPredios.getBounds();
-      if (boundsInicial.isValid()) map.fitBounds(boundsInicial);
-
-      inicializarBuscador(data.features);
-    });
-
-  function inicializarBuscador(features) {
-    const input = document.getElementById("inputBusqueda");
-    const sugerencias = document.getElementById("sugerencias");
-
-    input.addEventListener("input", function () {
-      const texto = this.value.toLowerCase();
-      sugerencias.innerHTML = "";
-      if (texto.length < 1) {
-        sugerencias.style.display = "none";
-        return;
-      }
-
-      const coincidencias = features.filter(f =>
-        f.properties.PK_PREDIOS &&
-        f.properties.PK_PREDIOS.toLowerCase().includes(texto)
-      ).slice(0, 10);
-
-      coincidencias.forEach(f => {
-        const div = document.createElement("div");
-        div.textContent = f.properties.PK_PREDIOS;
-        div.onclick = () => seleccionarPredio(f);
-        sugerencias.appendChild(div);
-      });
-
-      sugerencias.style.display = coincidencias.length ? "block" : "none";
-    });
-  }
-
-  function seleccionarPredio(feature) {
-    const sugerencias = document.getElementById("sugerencias");
-    sugerencias.style.display = "none";
-    document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
-
-    if (resaltado) map.removeLayer(resaltado);
-
-    resaltado = L.geoJSON(feature, {
-      style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
+    // Capa base OSM
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    const popupInfo = `
-      <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
-      <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
-      <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
-    `;
-    resaltado.bindPopup(popupInfo).openPopup();
-    map.fitBounds(resaltado.getBounds().pad(1));
-  }
+    let geojsonLayer;
 
-  document.getElementById("btnHome").onclick = function () {
-    if (resaltado) map.removeLayer(resaltado);
-    document.getElementById("inputBusqueda").value = "";
-    if (boundsInicial && boundsInicial.isValid()) {
-      map.fitBounds(boundsInicial);
-    } else {
-      map.setView([7.132, -75.569], 13);
-    }
-  };
+    // Cargar capa GeoJSON
+    fetch('Predios_Usos_Unidos_4326.geojson')
+      .then(response => response.json())
+      .then(data => {
+        geojsonLayer = L.geoJSON(data, {
+          style: { color: '#0074D9', weight: 1.5, fillOpacity: 0.2 }
+        }).addTo(map);
+      });
 
-  // 🎤 Reconocimiento de voz
-  const btnVoz = document.getElementById("btnVoz");
-  const inputBusqueda = document.getElementById("inputBusqueda");
+    // Buscar matrícula
+    const searchBox = document.getElementById('searchBox');
+    searchBox.addEventListener('keyup', function(e) {
+      const value = e.target.value.trim().toUpperCase();
+      if (!geojsonLayer || value === '') return;
 
-  if ('webkitSpeechRecognition' in window) {
-    const reconocimiento = new webkitSpeechRecognition();
-    reconocimiento.lang = "es-ES";
-    reconocimiento.continuous = false;
-    reconocimiento.interimResults = false;
+      let found = false;
 
-    btnVoz.addEventListener("click", () => {
-      reconocimiento.start();
+      geojsonLayer.eachLayer(layer => {
+        const props = layer.feature.properties;
+        if (props.PK_PREDIOS && props.PK_PREDIOS.toUpperCase() === value) {
+          const vereda = props.NOMBRE_VER || 'Sin información';
+          const uso = props.Usos || 'Sin uso registrado';
+          map.fitBounds(layer.getBounds());
+          layer.bindPopup(`<b>Matrícula:</b> ${props.PK_PREDIOS}<br><b>Vereda:</b> ${vereda}<br><b>Uso:</b> ${uso}`).openPopup();
+          found = true;
+        }
+      });
+
+      if (!found && value.length > 3) {
+        alert('No se encontró la matrícula ingresada');
+      }
     });
 
-    reconocimiento.onresult = (event) => {
-      const resultado = event.results[0][0].transcript;
-      inputBusqueda.value = resultado;
-      inputBusqueda.dispatchEvent(new Event("input")); // Disparar búsqueda
-    };
-  } else {
-    btnVoz.style.opacity = 0.3;
-    btnVoz.title = "Tu navegador no soporta búsqueda por voz.";
-  }
-</script>
-
+    // Botón para volver al inicio
+    document.getElementById('homeButton').addEventListener('click', () => {
+      map.setView([7.132, -75.569], 13);
+    });
+  </script>
 </body>
 </html>
