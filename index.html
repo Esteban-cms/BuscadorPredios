@@ -9,9 +9,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Font Awesome para los íconos -->
+  <!-- Font Awesome (para íconos de casa y lupa) -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
+  <!-- Estilos -->
   <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     #map { width: 100%; height: 100%; }
@@ -53,6 +54,7 @@
     #buscador i {
       color: #0078A8;
       margin-right: 8px;
+      font-size: 16px;
     }
 
     #buscador input {
@@ -93,8 +95,8 @@
       color: white;
       border: none;
       border-radius: 50%;
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       cursor: pointer;
       box-shadow: 0 0 6px rgba(0,0,0,0.3);
       display: flex;
@@ -112,6 +114,7 @@
 </head>
 <body>
 
+<!-- Panel superior -->
 <div id="panelBusqueda">
   <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
   <div id="buscador">
@@ -122,14 +125,17 @@
 </div>
 
 <!-- Botón de inicio -->
-<div id="btnHome" title="Volver al inicio"><i class="fas fa-home"></i></div>
+<button id="btnHome" title="Volver al inicio">
+  <i class="fas fa-home"></i>
+</button>
 
+<!-- Mapa -->
 <div id="map"></div>
 
 <script>
   var map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Base OSM
+  // Capa base OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
@@ -158,6 +164,7 @@
       inicializarBuscador(data.features);
     });
 
+  // Buscador con autocompletado
   function inicializarBuscador(features) {
     const input = document.getElementById("inputBusqueda");
     const sugerencias = document.getElementById("sugerencias");
@@ -169,8 +176,10 @@
         sugerencias.style.display = "none";
         return;
       }
-      const coincidencias = features.filter(f => 
-        f.properties.PK_PREDIOS && f.properties.PK_PREDIOS.toLowerCase().includes(texto)
+
+      const coincidencias = features.filter(f =>
+        f.properties.PK_PREDIOS &&
+        f.properties.PK_PREDIOS.toLowerCase().includes(texto)
       ).slice(0, 10);
 
       coincidencias.forEach(f => {
@@ -184,6 +193,7 @@
     });
   }
 
+  // Seleccionar predio
   function seleccionarPredio(feature) {
     const sugerencias = document.getElementById("sugerencias");
     sugerencias.style.display = "none";
@@ -205,6 +215,7 @@
     map.fitBounds(resaltado.getBounds().pad(1));
   }
 
+  // Botón de inicio
   document.getElementById("btnHome").onclick = function() {
     if (resaltado) map.removeLayer(resaltado);
     document.getElementById("inputBusqueda").value = "";
