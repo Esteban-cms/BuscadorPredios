@@ -45,56 +45,50 @@
       width: 28px;
       height: 28px;
     }
-/* 🔍 Buscador moderno corregido */
+/* 🔍 Buscador original conservado + lupa blanca */
 #buscador {
   position: absolute;
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  width: 340px;
+  width: 320px;
 }
 
 .search-box {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   border-radius: 25px;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   background: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 #buscador input {
   flex: 1;
-  padding: 12px 15px;
-  font-size: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
   border: none;
   outline: none;
   border-radius: 25px 0 0 25px;
-  height: 44px;
+  color: #333;
 }
 
 #btnBuscar {
-  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* Degradado rosa/naranja */
+  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* naranja degradado */
   border: none;
-  width: 55px;
-  height: 44px; /* ✅ igual altura que el input */
+  width: 45px;
+  height: 38px;
   border-radius: 0 25px 25px 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease-in-out, background 0.3s;
-}
-
-#btnBuscar:hover {
-  background: linear-gradient(90deg, #ff4b2b, #ff416c);
-  transform: scale(1.1);
 }
 
 #btnBuscar i {
-  color: white; /* ✅ lupa blanca */
-  font-size: 18px;
+  color: white; /* lupa blanca */
+  font-size: 16px;
 }
 
 #sugerencias {
@@ -329,6 +323,7 @@ function seleccionarPredio(feature) {
   </script>
 </body>
 </html>
+
 
 
 
