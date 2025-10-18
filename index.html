@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Explorador Rural - Briceño Antioquia</title>
 
   <!-- Leaflet -->
@@ -41,7 +41,7 @@
     }
 
     #titulo {
-      font-family: "Segoe UI", sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       font-size: 18px;
       font-weight: bold;
       background: rgba(255, 255, 255, 0.9);
@@ -56,18 +56,20 @@
     #buscador {
       display: flex;
       align-items: center;
-      background: #FFBF00; /* amarillo */
+      background: #ffca00;
       padding: 5px 10px;
-      border-radius: 30px;
+      border-radius: 40px;
       box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
       width: 280px;
       margin: 0 auto;
+      position: relative;
     }
 
     #buscador i {
-      color: #2e7d32; /* verde */
-      margin-right: 8px;
-      font-size: 18px;
+      color: #2e7d32;
+      margin-right: 10px;
+      font-size: 20px;
+      user-select: none;
     }
 
     #buscador input {
@@ -76,8 +78,9 @@
       outline: none;
       font-size: 14px;
       background: transparent;
-      font-weight: 600;
-      color: #444;
+      border-radius: 40px;
+      padding: 6px 0;
+      user-select: text;
     }
 
     #sugerencias {
@@ -91,8 +94,12 @@
       width: 280px;
       margin-left: auto;
       margin-right: auto;
-      font-size: 14px;
-      color: #333;
+      text-align: left;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 48px;
+      z-index: 1500;
     }
 
     #sugerencias div {
@@ -104,13 +111,13 @@
       background: #f0f0f0;
     }
 
-    /* Botón de inicio */
-    #btnHome {
+    /* Botón de inicio y ubicación */
+    #btnHome,
+    #btnLocate {
       position: absolute;
-      top: 10px;
       right: 10px;
       background: #0078a8;
-      color: white;
+      color: white !important; /* iconos blancos */
       border: none;
       border-radius: 50%;
       width: 44px;
@@ -125,61 +132,19 @@
       z-index: 1000;
     }
 
-    #btnHome:hover {
-      background: #005f82;
-      transform: scale(1.1);
+    #btnHome {
+      top: 10px;
     }
 
-    /* Botón Geolocalización */
     #btnLocate {
-      position: absolute;
       top: 70px;
-      right: 10px;
-      background: #0078a8;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      cursor: pointer;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
       font-size: 22px;
-      transition: 0.2s;
-      z-index: 1000;
     }
 
+    #btnHome:hover,
     #btnLocate:hover {
       background: #005f82;
       transform: scale(1.1);
-    }
-
-    /* Optimización móvil */
-    @media (max-width: 600px) {
-      #panelBusqueda {
-        width: 90%;
-        left: 5%;
-        transform: none;
-      }
-
-      #buscador {
-        width: 100%;
-      }
-
-      #sugerencias {
-        width: 100%;
-        left: 0;
-        right: 0;
-      }
-
-      #btnHome,
-      #btnLocate {
-        width: 38px;
-        height: 38px;
-        font-size: 16px;
-      }
     }
   </style>
 </head>
@@ -189,7 +154,12 @@
     <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
     <div id="buscador">
       <i class="fas fa-search"></i>
-      <input type="text" id="inputBusqueda" placeholder="Buscar matrícula..." />
+      <input
+        type="text"
+        id="inputBusqueda"
+        placeholder="Insertar matrícula..."
+        autocomplete="off"
+      />
     </div>
     <div id="sugerencias"></div>
   </div>
@@ -199,7 +169,7 @@
     <i class="fas fa-home"></i>
   </button>
 
-  <!-- Botón geolocalización -->
+  <!-- Botón de geolocalización -->
   <button id="btnLocate" title="Mostrar mi ubicación">
     <i class="fas fa-map-marker-alt"></i>
   </button>
@@ -208,10 +178,10 @@
   <div id="map"></div>
 
   <script>
-    var map = L.map("map").setView([7.132, -75.569], 13);
+    var map = L.map('map').setView([7.132, -75.569], 13);
 
     // Capa base OSM
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     }).addTo(map);
@@ -221,14 +191,14 @@
     var boundsInicial;
 
     // Cargar GeoJSON
-    fetch("Predios_Usos_Unidos_4326.geojson")
+    fetch('Predios_Usos_Unidos_4326.geojson')
       .then((res) => res.json())
       .then((data) => {
         capaPredios = L.geoJSON(data, {
           style: {
-            color: "#2262CC",
+            color: '#2262CC',
             weight: 1,
-            fillColor: "#66CCFF",
+            fillColor: '#66CCFF',
             fillOpacity: 0.4,
           },
         }).addTo(map);
@@ -241,14 +211,14 @@
 
     // Buscador con autocompletado
     function inicializarBuscador(features) {
-      const input = document.getElementById("inputBusqueda");
-      const sugerencias = document.getElementById("sugerencias");
+      const input = document.getElementById('inputBusqueda');
+      const sugerencias = document.getElementById('sugerencias');
 
-      input.addEventListener("input", function () {
+      input.addEventListener('input', function () {
         const texto = this.value.toLowerCase();
-        sugerencias.innerHTML = "";
+        sugerencias.innerHTML = '';
         if (texto.length < 1) {
-          sugerencias.style.display = "none";
+          sugerencias.style.display = 'none';
           return;
         }
 
@@ -261,42 +231,42 @@
           .slice(0, 10);
 
         coincidencias.forEach((f) => {
-          const div = document.createElement("div");
+          const div = document.createElement('div');
           div.textContent = f.properties.PK_PREDIOS;
           div.onclick = () => seleccionarPredio(f);
           sugerencias.appendChild(div);
         });
 
-        sugerencias.style.display = coincidencias.length ? "block" : "none";
+        sugerencias.style.display = coincidencias.length ? 'block' : 'none';
       });
     }
 
     // Seleccionar predio
     function seleccionarPredio(feature) {
-      const sugerencias = document.getElementById("sugerencias");
-      sugerencias.style.display = "none";
-      document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
+      const sugerencias = document.getElementById('sugerencias');
+      sugerencias.style.display = 'none';
+      document.getElementById('inputBusqueda').value = feature.properties.PK_PREDIOS;
 
       if (resaltado) map.removeLayer(resaltado);
 
       resaltado = L.geoJSON(feature, {
-        style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 },
+        style: { color: 'red', weight: 3, fillColor: 'yellow', fillOpacity: 0.5 },
       }).addTo(map);
 
       const popupInfo = `
-        <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
-        <b>Vereda:</b> ${feature.properties.NOMBRE_VER || "Sin dato"}<br>
-        <b>Uso:</b> ${feature.properties.Usos || "Sin dato"}
-      `;
+      <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
+      <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
+      <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
+    `;
       resaltado.bindPopup(popupInfo).openPopup();
 
       map.fitBounds(resaltado.getBounds().pad(1));
     }
 
     // Botón de inicio
-    document.getElementById("btnHome").onclick = function () {
+    document.getElementById('btnHome').onclick = function () {
       if (resaltado) map.removeLayer(resaltado);
-      document.getElementById("inputBusqueda").value = "";
+      document.getElementById('inputBusqueda').value = '';
       if (boundsInicial && boundsInicial.isValid()) {
         map.fitBounds(boundsInicial);
       } else {
@@ -304,23 +274,22 @@
       }
     };
 
-    // Geolocalización
-    document.getElementById("btnLocate").onclick = function () {
-      map.locate({ setView: true, maxZoom: 16 });
+    // Botón de geolocalización
+    document.getElementById('btnLocate').onclick = function () {
+      map.locate({ setView: true, maxZoom: 17 });
     };
 
-    map.on("locationfound", function (e) {
-      if (window.userMarker) {
-        map.removeLayer(window.userMarker);
-      }
-      window.userMarker = L.marker(e.latlng)
+    // Manejar evento de ubicación encontrada
+    map.on('locationfound', function (e) {
+      if (resaltado) map.removeLayer(resaltado);
+      resaltado = L.marker(e.latlng)
         .addTo(map)
-        .bindPopup("¡Estás aquí!")
+        .bindPopup('📍 Aquí estás')
         .openPopup();
     });
 
-    map.on("locationerror", function () {
-      alert("No se pudo obtener tu ubicación");
+    map.on('locationerror', function (e) {
+      alert('No se pudo obtener la ubicación.');
     });
   </script>
 </body>
