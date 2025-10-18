@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Buscador de Predios - Briceño Antioquia</title>
+  <title>Explorador Rural – Briceño, Antioquia</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Fuentes e íconos -->
+  <!-- Íconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- Estilos -->
@@ -24,18 +24,43 @@
       width: 100%;
       height: 100%;
     }
+
+    /* 🌿 Encabezado verde agrícola */
+    #encabezado {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(90deg, #2e7d32, #43a047);
+      color: white;
+      text-align: center;
+      padding: 12px 0;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      z-index: 1500;
+    }
+    #encabezado span {
+      font-size: 24px;
+    }
+
+    /* Buscador */
     #buscador {
       position: absolute;
-      top: 15px;
+      top: 70px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.97);
       padding: 12px 16px;
       border-radius: 12px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.2);
       z-index: 1000;
       width: 320px;
-      transition: all 0.3s ease;
     }
     #buscador input {
       width: 100%;
@@ -70,9 +95,10 @@
       background: #f0f8ff;
     }
 
+    /* Botón inicio */
     #btnHome {
       position: absolute;
-      top: 15px;
+      top: 80px;
       right: 15px;
       background: white;
       border: 2px solid #0078A8;
@@ -94,7 +120,6 @@
       transform: scale(1.1);
     }
 
-    /* Popup mejorado */
     .leaflet-popup-content {
       font-size: 14px;
       line-height: 1.4em;
@@ -106,28 +131,35 @@
 </head>
 <body>
 
+<!-- 🌽 Encabezado -->
+<div id="encabezado">
+  <span>🌽</span> Explorador Rural – Briceño, Antioquia
+</div>
+
+<!-- 🔍 Buscador -->
 <div id="buscador">
   <i class="fa-solid fa-magnifying-glass"></i>
-  <input type="text" id="inputBusqueda" placeholder="Buscar PK_PREDIOS..." autocomplete="off" />
+  <input type="text" id="inputBusqueda" placeholder="Insertar matrícula predial..." autocomplete="off" />
   <div id="sugerencias"></div>
 </div>
+
+<!-- 🏠 Botón inicio -->
 <div id="btnHome" title="Volver al inicio"><i class="fa-solid fa-house"></i></div>
+
+<!-- 🗺️ Mapa -->
 <div id="map"></div>
 
 <script>
   // Crear mapa centrado en Briceño
   var map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Agregar mapa base (OpenStreetMap)
+  // Mapa base OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
   }).addTo(map);
 
-  // Variables globales
-  var capaPredios;
-  var resaltado;
-  var boundsInicial;
+  var capaPredios, resaltado, boundsInicial;
 
   // Cargar capa GeoJSON
   fetch('Predios_Usos_Unidos_4326.geojson')
@@ -138,15 +170,7 @@
           color: '#0078A8',
           weight: 1,
           fillColor: '#66CCFF',
-          fillOpacity: 0.4
-        },
-        onEachFeature: function(feature, layer) {
-          let info = `
-            <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
-            <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
-            <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
-          `;
-          layer.bindPopup(info);
+          fillOpacity: 0.3
         }
       }).addTo(map);
 
@@ -156,7 +180,7 @@
       inicializarBuscador(data.features);
     });
 
-  // Inicializar buscador con autocompletado
+  // Inicializar buscador
   function inicializarBuscador(features) {
     const input = document.getElementById("inputBusqueda");
     const sugerencias = document.getElementById("sugerencias");
@@ -168,6 +192,7 @@
         sugerencias.style.display = "none";
         return;
       }
+
       const coincidencias = features.filter(f =>
         f.properties.PK_PREDIOS.toLowerCase().includes(texto)
       ).slice(0, 10);
@@ -182,7 +207,6 @@
       sugerencias.style.display = coincidencias.length ? "block" : "none";
     });
 
-    // Buscar con Enter
     input.addEventListener("keydown", function(e) {
       if (e.key === "Enter" && sugerencias.firstChild) {
         sugerencias.firstChild.click();
@@ -190,7 +214,7 @@
     });
   }
 
-  // Seleccionar y resaltar predio
+  // Selección de predio
   function seleccionarPredio(feature) {
     const sugerencias = document.getElementById("sugerencias");
     sugerencias.style.display = "none";
@@ -199,7 +223,7 @@
     if (resaltado) map.removeLayer(resaltado);
 
     resaltado = L.geoJSON(feature, {
-      style: { color: "#ff6600", weight: 3, fillColor: "#ffff99", fillOpacity: 0.5 }
+      style: { color: "#ff6600", weight: 3, fillColor: "#ffff99", fillOpacity: 0.6 }
     }).addTo(map);
 
     const popupInfo = `
@@ -212,7 +236,7 @@
     map.fitBounds(resaltado.getBounds().pad(1));
   }
 
-  // Botón para volver al inicio
+  // Botón volver al inicio
   document.getElementById("btnHome").onclick = function() {
     if (resaltado) map.removeLayer(resaltado);
     document.getElementById("inputBusqueda").value = "";
