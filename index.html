@@ -247,16 +247,12 @@
         style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
       }).addTo(map);
 
-   const popupInfo = `
-  <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">
-    <p><i class="fas fa-map-marked-alt" style="color:#2e86de;"></i> 
-       <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
-    <p><i class="fas fa-road" style="color:#16a085;"></i> 
-       <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
-    <p><i class="fas fa-tractor" style="color:#f39c12;"></i> 
-       <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-  </div>
+let info = `
+  <p>🗺️ <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
+  <p>🛣️ <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
+  <p>🚜 <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
 `;
+
 
       resaltado.bindPopup(popupInfo).openPopup();
       map.fitBounds(resaltado.getBounds().pad(1));
@@ -296,6 +292,7 @@
   </script>
 </body>
 </html>
+
 
 
 
