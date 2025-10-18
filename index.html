@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Explorador Rural - Briceño Antioquia</title>
 
@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Estilos -->
   <style>
     html, body { height: 100%; margin: 0; padding: 0; }
     #map { width: 100%; height: 100%; }
@@ -36,7 +35,7 @@
       color: #2E7D32;
     }
 
-    /* Buscador estilo moderno */
+    /* Buscador amarillo moderno */
     #buscador {
       display: flex;
       align-items: center;
@@ -111,7 +110,7 @@
       background: #f9f9f9;
     }
 
-    /* Botón de inicio */
+    /* Botón Home */
     #btnHome {
       position: absolute;
       top: 10px;
@@ -140,15 +139,19 @@
 </head>
 <body>
 
-<!-- Panel superior -->
+<!-- Panel -->
 <div id="panelBusqueda">
   <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
+
+  <!-- Buscador visual moderno -->
   <div id="buscador">
-    <div class="icon search">🔍</div>
-    <input type="text" id="inputBusqueda" placeholder="http://www" />
+    <div class="icon">🔍</div>
+    <input type="text" id="inputBusqueda" placeholder="Buscar por matrícula..." />
     <div class="click-icon">🖱️</div>
-    <div class="icon mic">🎤</div>
+    <div class="icon" id="btnVoz" title="Buscar por voz">🎤</div>
   </div>
+
+  <!-- Autocompletado -->
   <div id="sugerencias"></div>
 </div>
 
@@ -161,17 +164,13 @@
 <script>
   let map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Capa base
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
   }).addTo(map);
 
-  let capaPredios;
-  let resaltado;
-  let boundsInicial;
+  let capaPredios, resaltado, boundsInicial;
 
-  // Cargar GeoJSON
   fetch('Predios_Usos_Unidos_4326.geojson')
     .then(res => res.json())
     .then(data => {
@@ -190,7 +189,6 @@
       inicializarBuscador(data.features);
     });
 
-  // Buscador con autocompletado
   function inicializarBuscador(features) {
     const input = document.getElementById("inputBusqueda");
     const sugerencias = document.getElementById("sugerencias");
@@ -219,7 +217,6 @@
     });
   }
 
-  // Seleccionar predio y resaltarlo
   function seleccionarPredio(feature) {
     const sugerencias = document.getElementById("sugerencias");
     sugerencias.style.display = "none";
@@ -240,7 +237,6 @@
     map.fitBounds(resaltado.getBounds().pad(1));
   }
 
-  // Botón para volver al inicio
   document.getElementById("btnHome").onclick = function () {
     if (resaltado) map.removeLayer(resaltado);
     document.getElementById("inputBusqueda").value = "";
@@ -251,5 +247,30 @@
     }
   };
 
-  // Animación del clic cuando se enfoca el input
-  const input = document.getElementById
+  // 🎤 Reconocimiento de voz
+  const btnVoz = document.getElementById("btnVoz");
+  const inputBusqueda = document.getElementById("inputBusqueda");
+
+  if ('webkitSpeechRecognition' in window) {
+    const reconocimiento = new webkitSpeechRecognition();
+    reconocimiento.lang = "es-ES";
+    reconocimiento.continuous = false;
+    reconocimiento.interimResults = false;
+
+    btnVoz.addEventListener("click", () => {
+      reconocimiento.start();
+    });
+
+    reconocimiento.onresult = (event) => {
+      const resultado = event.results[0][0].transcript;
+      inputBusqueda.value = resultado;
+      inputBusqueda.dispatchEvent(new Event("input")); // Disparar búsqueda
+    };
+  } else {
+    btnVoz.style.opacity = 0.3;
+    btnVoz.title = "Tu navegador no soporta búsqueda por voz.";
+  }
+</script>
+
+</body>
+</html>
