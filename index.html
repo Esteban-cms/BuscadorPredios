@@ -12,17 +12,12 @@
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Font Awesome (para íconos de casa y lupa) -->
+  <!-- Font Awesome -->
   <script
     src="https://kit.fontawesome.com/a076d05399.js"
     crossorigin="anonymous"
   ></script>
 
-  <!-- Librerías para exportar -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-  <!-- Estilos -->
   <style>
     html,
     body {
@@ -61,18 +56,18 @@
     #buscador {
       display: flex;
       align-items: center;
-      background: white;
+      background: #FFBF00; /* amarillo */
       padding: 5px 10px;
-      border-radius: 10px;
+      border-radius: 30px;
       box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
       width: 280px;
       margin: 0 auto;
     }
 
     #buscador i {
-      color: #0078a8;
+      color: #2e7d32; /* verde */
       margin-right: 8px;
-      font-size: 16px;
+      font-size: 18px;
     }
 
     #buscador input {
@@ -80,6 +75,9 @@
       border: none;
       outline: none;
       font-size: 14px;
+      background: transparent;
+      font-weight: 600;
+      color: #444;
     }
 
     #sugerencias {
@@ -93,6 +91,8 @@
       width: 280px;
       margin-left: auto;
       margin-right: auto;
+      font-size: 14px;
+      color: #333;
     }
 
     #sugerencias div {
@@ -146,38 +146,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      font-size: 22px;
       transition: 0.2s;
       z-index: 1000;
     }
 
     #btnLocate:hover {
-      background: #005f82;
-      transform: scale(1.1);
-    }
-
-    /* Botón Exportar */
-    #btnExport {
-      position: absolute;
-      top: 130px;
-      right: 10px;
-      background: #0078a8;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      cursor: pointer;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      transition: 0.2s;
-      z-index: 1000;
-    }
-
-    #btnExport:hover {
       background: #005f82;
       transform: scale(1.1);
     }
@@ -201,8 +175,7 @@
       }
 
       #btnHome,
-      #btnLocate,
-      #btnExport {
+      #btnLocate {
         width: 38px;
         height: 38px;
         font-size: 16px;
@@ -216,7 +189,7 @@
     <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
     <div id="buscador">
       <i class="fas fa-search"></i>
-      <input type="text" id="inputBusqueda" placeholder="Insertar matrícula..." />
+      <input type="text" id="inputBusqueda" placeholder="Buscar matrícula..." />
     </div>
     <div id="sugerencias"></div>
   </div>
@@ -228,12 +201,7 @@
 
   <!-- Botón geolocalización -->
   <button id="btnLocate" title="Mostrar mi ubicación">
-    <i class="fas fa-location-arrow"></i>
-  </button>
-
-  <!-- Botón exportar mapa -->
-  <button id="btnExport" title="Exportar mapa">
-    <i class="fas fa-file-export"></i>
+    <i class="fas fa-map-marker-alt"></i>
   </button>
 
   <!-- Mapa -->
@@ -354,20 +322,6 @@
     map.on("locationerror", function () {
       alert("No se pudo obtener tu ubicación");
     });
-
-    // Exportar a PDF
-    document.getElementById("btnExport").onclick = function () {
-      html2canvas(document.getElementById("map")).then((canvas) => {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jspdf.jsPDF({
-          orientation: "landscape",
-          unit: "px",
-          format: [canvas.width, canvas.height],
-        });
-        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-        pdf.save("mapa.pdf");
-      });
-    };
   </script>
 </body>
 </html>
