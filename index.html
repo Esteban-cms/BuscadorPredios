@@ -235,37 +235,41 @@
       };
     }
 
-    // Resaltar y mostrar información del predio
-    function seleccionarPredio(feature) {
-      const sugerencias = document.getElementById("sugerencias");
-      sugerencias.style.display = "none";
-      document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
+   // Resaltar y mostrar información del predio
+function seleccionarPredio(feature) {
+  const sugerencias = document.getElementById("sugerencias");
+  sugerencias.style.display = "none";
+  document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
 
-      if (resaltado) map.removeLayer(resaltado);
+  if (resaltado) map.removeLayer(resaltado);
 
-      resaltado = L.geoJSON(feature, {
-        style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
-      }).addTo(map);
-const popupInfo = `
-  <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">
-    <p><i class="fas fa-map-marked-alt" style="color:#2e86de;"></i> 
-       <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
-    <p><i class="fas fa-road" style="color:#16a085;"></i> 
-       <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
-    <p><i class="fas fa-tractor" style="color:#f39c12;"></i> 
-       <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-  </div>
-`;
-let info = `
-  <p>🗺️ <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
-  <p>🛣️ <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
-  <p>🚜 <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-`;
-
-
-      resaltado.bindPopup(popupInfo).openPopup();
-      map.fitBounds(resaltado.getBounds().pad(1));
+  // Crear el estilo del predio resaltado
+  resaltado = L.geoJSON(feature, {
+    style: {
+      color: "red",
+      weight: 3,
+      fillColor: "yellow",
+      fillOpacity: 0.5
     }
+  }).addTo(map);
+
+  // 📍 Contenido del popup con emojis
+  const info = `
+    <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">
+      <p>🗺️ <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
+      <p>🛣️ <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
+      <p>🚜 <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
+    </div>
+  `;
+
+  // Mostrar popup con emojis
+  resaltado.bindPopup(info).openPopup();
+
+  // 🔍 Centrar y hacer zoom al predio
+  map.fitBounds(resaltado.getBounds().pad(1));
+}
+
+
 
     // Botón volver al inicio
     document.getElementById("btnHome").onclick = function() {
@@ -301,6 +305,7 @@ let info = `
   </script>
 </body>
 </html>
+
 
 
 
