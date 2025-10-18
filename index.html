@@ -47,11 +47,7 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 // Inicializar mapa
-var map = L.map('map').setView([0,0],2);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© OpenStreetMap'
-}).addTo(map);
-
+var map = L.map('map');
 var prediosLayer, resaltadoLayer, boundsInicial;
 
 // Cargar GeoJSON
@@ -69,8 +65,9 @@ fetch('Predios_Usos_Unidos.geojson')
         }
     }).addTo(map);
 
+    // Ajustar vista inicial a todos los predios
     boundsInicial = prediosLayer.getBounds();
-    map.fitBounds(boundsInicial);
+    if(boundsInicial.isValid()) map.fitBounds(boundsInicial);
 
     // Autocompletado
     var datPK = document.getElementById('matriculas');
@@ -115,12 +112,14 @@ function buscarPredio(){
                 'Usos: '+p.Usos+'<hr>';
         });
 
-        resaltadoLayer = L.geoJSON(encontrados.map(l=>l.feature), {
+        // Resaltar predios encontrados
+        resaltadoLayer = L.geoJSON(encontrados.map(l => l.feature), {
             style:{ color:'red', weight:2, fillColor:'yellow', fillOpacity:0.5 }
         }).addTo(map);
 
-        var group = L.featureGroup(encontrados);
-        map.fitBounds(group.getBounds().pad(1));
+        // Ajustar mapa al área de los predios encontrados
+        var group = L.featureGroup(resaltadoLayer.getLayers());
+        map.fitBounds(group.getBounds().pad(0.5));
     } else {
         resultadosDiv.innerHTML = 'No se encontraron predios con esos filtros';
     }
@@ -136,7 +135,7 @@ document.getElementById('btnHome').onclick = function(){
     document.getElementById('buscarPK').value='';
     document.getElementById('buscarVereda').value='';
     document.getElementById('buscarUsos').value='';
-    map.fitBounds(boundsInicial);
+    if(boundsInicial.isValid()) map.fitBounds(boundsInicial);
 };
 </script>
 
