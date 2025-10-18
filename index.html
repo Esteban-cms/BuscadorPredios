@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8" />
-<title>Buscador Avanzado de Predios</title>
+<title>Buscador Avanzado de Predios - Briceño</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <style>
@@ -46,9 +46,12 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-// Inicializar mapa
-var map = L.map('map');
-var prediosLayer, resaltadoLayer, boundsInicial;
+// Inicializar mapa centrado en Briceño, Antioquia
+var map = L.map('map').setView([7.132, -75.569], 13);
+var prediosLayer, resaltadoLayer;
+
+// Vista inicial para el botón casa
+var boundsInicial;
 
 // Cargar GeoJSON
 fetch('Predios_Usos_Unidos.geojson')
@@ -65,7 +68,7 @@ fetch('Predios_Usos_Unidos.geojson')
         }
     }).addTo(map);
 
-    // Ajustar vista inicial a todos los predios
+    // Ajustar vista inicial a todos los predios si hay geometría
     boundsInicial = prediosLayer.getBounds();
     if(boundsInicial.isValid()) map.fitBounds(boundsInicial);
 
@@ -135,7 +138,11 @@ document.getElementById('btnHome').onclick = function(){
     document.getElementById('buscarPK').value='';
     document.getElementById('buscarVereda').value='';
     document.getElementById('buscarUsos').value='';
-    if(boundsInicial.isValid()) map.fitBounds(boundsInicial);
+    if(boundsInicial && boundsInicial.isValid()){
+        map.fitBounds(boundsInicial);
+    } else {
+        map.setView([7.132, -75.569], 13); // fallback
+    }
 };
 </script>
 
