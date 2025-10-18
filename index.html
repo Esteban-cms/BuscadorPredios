@@ -1,18 +1,39 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Explorador Rural - Briceño Antioquia</title>
 
   <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Font Awesome (para íconos de casa y lupa) -->
+  <script
+    src="https://kit.fontawesome.com/a076d05399.js"
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- Librerías para exportar -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <!-- Estilos -->
   <style>
-    html, body { height: 100%; margin: 0; padding: 0; }
-    #map { width: 100%; height: 100%; }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
 
     /* Panel superior */
     #panelBusqueda {
@@ -25,63 +46,40 @@
     }
 
     #titulo {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: "Segoe UI", sans-serif;
       font-size: 18px;
       font-weight: bold;
-      background: rgba(255,255,255,0.95);
+      background: rgba(255, 255, 255, 0.9);
       border-radius: 10px;
       padding: 6px 12px;
       margin-bottom: 6px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.2);
-      color: #2E7D32;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+      color: #2e7d32;
     }
 
-    /* Buscador moderno */
+    /* Buscador */
     #buscador {
       display: flex;
       align-items: center;
-      background: linear-gradient(90deg, #ffc107, #ffca28);
-      border-radius: 50px;
-      padding: 10px 20px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      width: 420px;
-      max-width: 90%;
+      background: white;
+      padding: 5px 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      width: 280px;
       margin: 0 auto;
-      position: relative;
+    }
+
+    #buscador i {
+      color: #0078a8;
+      margin-right: 8px;
+      font-size: 16px;
     }
 
     #buscador input {
-      flex: 1;
+      width: 100%;
       border: none;
-      border-radius: 20px;
-      padding: 10px 15px;
-      font-size: 16px;
       outline: none;
-      background: white;
-      color: #333;
-    }
-
-    #buscador .icon {
-      font-size: 20px;
-      margin: 0 10px;
-      cursor: pointer;
-    }
-
-    #buscador .click-icon {
-      position: absolute;
-      right: 60px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 24px;
-      pointer-events: none;
-      animation: clickPulse 1s ease infinite;
-      opacity: 0.7;
-    }
-
-    @keyframes clickPulse {
-      0% { transform: translateY(-50%) scale(1); opacity: 0.8; }
-      50% { transform: translateY(-50%) scale(1.1); opacity: 0.3; }
-      100% { transform: translateY(-50%) scale(1); opacity: 0.8; }
+      font-size: 14px;
     }
 
     #sugerencias {
@@ -89,187 +87,287 @@
       border: 1px solid #ccc;
       max-height: 120px;
       overflow-y: auto;
-      margin-top: 4px;
-      border-radius: 10px;
+      margin-top: 2px;
+      border-radius: 5px;
       display: none;
-      width: 420px;
+      width: 280px;
       margin-left: auto;
       margin-right: auto;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      font-size: 14px;
-      z-index: 1001;
     }
 
     #sugerencias div {
-      padding: 10px;
+      padding: 5px;
       cursor: pointer;
-      transition: background 0.2s;
     }
 
     #sugerencias div:hover {
-      background: #f9f9f9;
+      background: #f0f0f0;
     }
 
-    /* Botón Home */
+    /* Botón de inicio */
     #btnHome {
       position: absolute;
       top: 10px;
       right: 10px;
-      background: #0078A8;
+      background: #0078a8;
       color: white;
       border: none;
       border-radius: 50%;
       width: 44px;
       height: 44px;
       cursor: pointer;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
       transition: 0.2s;
-      z-index: 1001;
+      z-index: 1000;
     }
 
     #btnHome:hover {
       background: #005f82;
       transform: scale(1.1);
     }
+
+    /* Botón Geolocalización */
+    #btnLocate {
+      position: absolute;
+      top: 70px;
+      right: 10px;
+      background: #0078a8;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: 0.2s;
+      z-index: 1000;
+    }
+
+    #btnLocate:hover {
+      background: #005f82;
+      transform: scale(1.1);
+    }
+
+    /* Botón Exportar */
+    #btnExport {
+      position: absolute;
+      top: 130px;
+      right: 10px;
+      background: #0078a8;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: 0.2s;
+      z-index: 1000;
+    }
+
+    #btnExport:hover {
+      background: #005f82;
+      transform: scale(1.1);
+    }
+
+    /* Optimización móvil */
+    @media (max-width: 600px) {
+      #panelBusqueda {
+        width: 90%;
+        left: 5%;
+        transform: none;
+      }
+
+      #buscador {
+        width: 100%;
+      }
+
+      #sugerencias {
+        width: 100%;
+        left: 0;
+        right: 0;
+      }
+
+      #btnHome,
+      #btnLocate,
+      #btnExport {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
-
-<!-- Panel superior -->
-<div id="panelBusqueda">
-  <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
-  <div id="buscador">
-    <div class="icon">🔍</div>
-    <input type="text" id="inputBusqueda" placeholder="Buscar matrícula..." />
-    <div class="click-icon">🖱️</div>
-    <div class="icon" id="btnVoz" title="Buscar por voz">🎤</div>
+  <!-- Panel superior -->
+  <div id="panelBusqueda">
+    <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
+    <div id="buscador">
+      <i class="fas fa-search"></i>
+      <input type="text" id="inputBusqueda" placeholder="Insertar matrícula..." />
+    </div>
+    <div id="sugerencias"></div>
   </div>
-  <div id="sugerencias"></div>
-</div>
 
-<!-- Botón de inicio -->
-<button id="btnHome" title="Volver al inicio">🏠</button>
+  <!-- Botón de inicio -->
+  <button id="btnHome" title="Volver al inicio">
+    <i class="fas fa-home"></i>
+  </button>
 
-<!-- Mapa -->
-<div id="map"></div>
+  <!-- Botón geolocalización -->
+  <button id="btnLocate" title="Mostrar mi ubicación">
+    <i class="fas fa-location-arrow"></i>
+  </button>
 
-<script>
-  var map = L.map('map').setView([7.132, -75.569], 13);
+  <!-- Botón exportar mapa -->
+  <button id="btnExport" title="Exportar mapa">
+    <i class="fas fa-file-export"></i>
+  </button>
 
-  // Capa base
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-  }).addTo(map);
+  <!-- Mapa -->
+  <div id="map"></div>
 
-  var capaPredios;
-  var resaltado;
-  var boundsInicial;
+  <script>
+    var map = L.map("map").setView([7.132, -75.569], 13);
 
-  fetch('Predios_Usos_Unidos_4326.geojson')
-    .then(res => res.json())
-    .then(data => {
-      capaPredios = L.geoJSON(data, {
-        style: {
-          color: '#2262CC',
-          weight: 1,
-          fillColor: '#66CCFF',
-          fillOpacity: 0.4
-        }
-      }).addTo(map);
-
-      boundsInicial = capaPredios.getBounds();
-      if (boundsInicial.isValid()) map.fitBounds(boundsInicial);
-
-      inicializarBuscador(data.features);
-    });
-
-  function inicializarBuscador(features) {
-    const input = document.getElementById("inputBusqueda");
-    const sugerencias = document.getElementById("sugerencias");
-
-    input.addEventListener("input", function () {
-      const texto = this.value.toLowerCase();
-      sugerencias.innerHTML = "";
-      if (texto.length < 1) {
-        sugerencias.style.display = "none";
-        return;
-      }
-
-      const coincidencias = features.filter(f =>
-        f.properties.PK_PREDIOS &&
-        f.properties.PK_PREDIOS.toLowerCase().includes(texto)
-      ).slice(0, 10);
-
-      coincidencias.forEach(f => {
-        const div = document.createElement("div");
-        div.textContent = f.properties.PK_PREDIOS;
-        div.onclick = () => seleccionarPredio(f);
-        sugerencias.appendChild(div);
-      });
-
-      sugerencias.style.display = coincidencias.length ? "block" : "none";
-    });
-  }
-
-  function seleccionarPredio(feature) {
-    const sugerencias = document.getElementById("sugerencias");
-    sugerencias.style.display = "none";
-    document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
-
-    if (resaltado) map.removeLayer(resaltado);
-
-    resaltado = L.geoJSON(feature, {
-      style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
+    // Capa base OSM
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     }).addTo(map);
 
-    const popupInfo = `
-      <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
-      <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}<br>
-      <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}
-    `;
-    resaltado.bindPopup(popupInfo).openPopup();
-    map.fitBounds(resaltado.getBounds().pad(1));
-  }
+    var capaPredios;
+    var resaltado;
+    var boundsInicial;
 
-  document.getElementById("btnHome").onclick = function () {
-    if (resaltado) map.removeLayer(resaltado);
-    document.getElementById("inputBusqueda").value = "";
-    if (boundsInicial && boundsInicial.isValid()) {
-      map.fitBounds(boundsInicial);
-    } else {
-      map.setView([7.132, -75.569], 13);
+    // Cargar GeoJSON
+    fetch("Predios_Usos_Unidos_4326.geojson")
+      .then((res) => res.json())
+      .then((data) => {
+        capaPredios = L.geoJSON(data, {
+          style: {
+            color: "#2262CC",
+            weight: 1,
+            fillColor: "#66CCFF",
+            fillOpacity: 0.4,
+          },
+        }).addTo(map);
+
+        boundsInicial = capaPredios.getBounds();
+        if (boundsInicial.isValid()) map.fitBounds(boundsInicial);
+
+        inicializarBuscador(data.features);
+      });
+
+    // Buscador con autocompletado
+    function inicializarBuscador(features) {
+      const input = document.getElementById("inputBusqueda");
+      const sugerencias = document.getElementById("sugerencias");
+
+      input.addEventListener("input", function () {
+        const texto = this.value.toLowerCase();
+        sugerencias.innerHTML = "";
+        if (texto.length < 1) {
+          sugerencias.style.display = "none";
+          return;
+        }
+
+        const coincidencias = features
+          .filter(
+            (f) =>
+              f.properties.PK_PREDIOS &&
+              f.properties.PK_PREDIOS.toLowerCase().includes(texto)
+          )
+          .slice(0, 10);
+
+        coincidencias.forEach((f) => {
+          const div = document.createElement("div");
+          div.textContent = f.properties.PK_PREDIOS;
+          div.onclick = () => seleccionarPredio(f);
+          sugerencias.appendChild(div);
+        });
+
+        sugerencias.style.display = coincidencias.length ? "block" : "none";
+      });
     }
-  };
 
-  // Reconocimiento por voz
-  const btnVoz = document.getElementById("btnVoz");
-  const inputBusqueda = document.getElementById("inputBusqueda");
+    // Seleccionar predio
+    function seleccionarPredio(feature) {
+      const sugerencias = document.getElementById("sugerencias");
+      sugerencias.style.display = "none";
+      document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
 
-  if ('webkitSpeechRecognition' in window) {
-    const reconocimiento = new webkitSpeechRecognition();
-    reconocimiento.lang = "es-ES";
-    reconocimiento.continuous = false;
-    reconocimiento.interimResults = false;
+      if (resaltado) map.removeLayer(resaltado);
 
-    btnVoz.addEventListener("click", () => {
-      reconocimiento.start();
+      resaltado = L.geoJSON(feature, {
+        style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 },
+      }).addTo(map);
+
+      const popupInfo = `
+        <b>Predio:</b> ${feature.properties.PK_PREDIOS}<br>
+        <b>Vereda:</b> ${feature.properties.NOMBRE_VER || "Sin dato"}<br>
+        <b>Uso:</b> ${feature.properties.Usos || "Sin dato"}
+      `;
+      resaltado.bindPopup(popupInfo).openPopup();
+
+      map.fitBounds(resaltado.getBounds().pad(1));
+    }
+
+    // Botón de inicio
+    document.getElementById("btnHome").onclick = function () {
+      if (resaltado) map.removeLayer(resaltado);
+      document.getElementById("inputBusqueda").value = "";
+      if (boundsInicial && boundsInicial.isValid()) {
+        map.fitBounds(boundsInicial);
+      } else {
+        map.setView([7.132, -75.569], 13);
+      }
+    };
+
+    // Geolocalización
+    document.getElementById("btnLocate").onclick = function () {
+      map.locate({ setView: true, maxZoom: 16 });
+    };
+
+    map.on("locationfound", function (e) {
+      if (window.userMarker) {
+        map.removeLayer(window.userMarker);
+      }
+      window.userMarker = L.marker(e.latlng)
+        .addTo(map)
+        .bindPopup("¡Estás aquí!")
+        .openPopup();
     });
 
-    reconocimiento.onresult = (event) => {
-      const resultado = event.results[0][0].transcript;
-      inputBusqueda.value = resultado;
-      inputBusqueda.dispatchEvent(new Event("input"));
-    };
-  } else {
-    btnVoz.style.opacity = 0.4;
-    btnVoz.title = "Tu navegador no soporta búsqueda por voz.";
-  }
-</script>
+    map.on("locationerror", function () {
+      alert("No se pudo obtener tu ubicación");
+    });
 
+    // Exportar a PDF
+    document.getElementById("btnExport").onclick = function () {
+      html2canvas(document.getElementById("map")).then((canvas) => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jspdf.jsPDF({
+          orientation: "landscape",
+          unit: "px",
+          format: [canvas.width, canvas.height],
+        });
+        pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+        pdf.save("mapa.pdf");
+      });
+    };
+  </script>
 </body>
 </html>
