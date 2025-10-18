@@ -3,184 +3,152 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Explorador Rural – Briceño, Antioquia</title>
+  <title>Explorador Rural - Briceño Antioquia</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Font Awesome -->
+  <!-- Font Awesome para los íconos -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: "Segoe UI", Roboto, sans-serif;
-      background: #f2f2f2;
-    }
-    #map {
-      width: 100%;
-      height: 100%;
-    }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map { width: 100%; height: 100%; }
 
-    /* 🌽 Encabezado */
-    #encabezado {
+    /* Panel superior */
+    #panelBusqueda {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      background: linear-gradient(90deg, #2e7d32, #43a047);
-      color: white;
-      text-align: center;
-      padding: 12px 0;
-      font-size: 20px;
-      font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-      z-index: 1500;
-    }
-    #encabezado span {
-      font-size: 24px;
-    }
-
-    /* 🔍 Buscador con icono */
-    #buscador {
-      position: absolute;
-      top: 70px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.97);
-      padding: 10px 16px;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
       z-index: 1000;
-      width: 320px;
+      text-align: center;
+    }
+
+    #titulo {
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 18px;
+      font-weight: bold;
+      background: rgba(255,255,255,0.9);
+      border-radius: 10px;
+      padding: 6px 12px;
+      margin-bottom: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      color: #2E7D32;
+    }
+
+    /* Buscador */
+    #buscador {
       display: flex;
       align-items: center;
-      gap: 8px;
+      background: white;
+      padding: 5px 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      width: 280px;
+      margin: 0 auto;
     }
-    #buscador .search-icon {
-      color: #2e7d32;
-      font-size: 18px;
+
+    #buscador i {
+      color: #0078A8;
+      margin-right: 8px;
     }
+
     #buscador input {
       width: 100%;
-      padding: 8px;
-      font-size: 14px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      border: none;
       outline: none;
-      transition: 0.2s;
-    }
-    #buscador input:focus {
-      border-color: #43a047;
-      box-shadow: 0 0 5px #43a047;
+      font-size: 14px;
     }
 
-    /* Lista de sugerencias */
     #sugerencias {
-      position: absolute;
-      top: 110%;
-      left: 0;
-      right: 0;
       background: white;
       border: 1px solid #ccc;
-      max-height: 150px;
+      max-height: 120px;
       overflow-y: auto;
-      border-radius: 6px;
+      margin-top: 2px;
+      border-radius: 5px;
       display: none;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      z-index: 999;
-    }
-    #sugerencias div {
-      padding: 6px 10px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-    #sugerencias div:hover {
-      background: #e8f5e9;
+      width: 280px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    /* 🏠 Botón inicio */
+    #sugerencias div {
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    #sugerencias div:hover {
+      background: #f0f0f0;
+    }
+
+    /* Botón de inicio */
     #btnHome {
       position: absolute;
-      top: 80px;
-      right: 15px;
-      background: white;
-      border: 2px solid #0078A8;
+      top: 10px;
+      right: 10px;
+      background: #0078A8;
+      color: white;
+      border: none;
       border-radius: 50%;
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 0 6px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
-      transition: background 0.2s, transform 0.2s;
-      z-index: 1000;
-    }
-    #btnHome:hover {
-      background: #0078A8;
-      color: white;
-      transform: scale(1.1);
+      transition: 0.2s;
     }
 
-    .leaflet-popup-content {
-      font-size: 14px;
-      line-height: 1.4em;
-    }
-    .leaflet-popup-content b {
-      color: #0078A8;
+    #btnHome:hover {
+      background: #005f82;
+      transform: scale(1.1);
     }
   </style>
 </head>
 <body>
 
-<!-- 🌽 Encabezado -->
-<div id="encabezado">
-  <span>🌽</span> Explorador Rural – Briceño, Antioquia
-</div>
-
-<!-- 🔍 Buscador -->
-<div id="buscador">
-  <div class="search-icon"><i class="fas fa-search"></i></div>
-  <input type="text" id="inputBusqueda" placeholder="Insertar matrícula predial..." autocomplete="off" />
+<div id="panelBusqueda">
+  <div id="titulo">🌽 Explorador Rural – Briceño, Antioquia</div>
+  <div id="buscador">
+    <i class="fas fa-search"></i>
+    <input type="text" id="inputBusqueda" placeholder="Insertar matrícula..." />
+  </div>
   <div id="sugerencias"></div>
 </div>
 
-<!-- 🏠 Botón inicio -->
+<!-- Botón de inicio -->
 <div id="btnHome" title="Volver al inicio"><i class="fas fa-home"></i></div>
 
-<!-- 🗺️ Mapa -->
 <div id="map"></div>
 
 <script>
   var map = L.map('map').setView([7.132, -75.569], 13);
 
-  // Capa base OSM
+  // Base OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
   }).addTo(map);
 
-  var capaPredios, resaltado, boundsInicial;
+  var capaPredios;
+  var resaltado;
+  var boundsInicial;
 
-  // Cargar capa GeoJSON
+  // Cargar GeoJSON
   fetch('Predios_Usos_Unidos_4326.geojson')
     .then(res => res.json())
     .then(data => {
       capaPredios = L.geoJSON(data, {
         style: {
-          color: '#0078A8',
+          color: '#2262CC',
           weight: 1,
           fillColor: '#66CCFF',
-          fillOpacity: 0.3
+          fillOpacity: 0.4
         }
       }).addTo(map);
 
@@ -190,7 +158,6 @@
       inicializarBuscador(data.features);
     });
 
-  // Inicializar buscador
   function inicializarBuscador(features) {
     const input = document.getElementById("inputBusqueda");
     const sugerencias = document.getElementById("sugerencias");
@@ -202,9 +169,8 @@
         sugerencias.style.display = "none";
         return;
       }
-
-      const coincidencias = features.filter(f =>
-        f.properties.PK_PREDIOS.toLowerCase().includes(texto)
+      const coincidencias = features.filter(f => 
+        f.properties.PK_PREDIOS && f.properties.PK_PREDIOS.toLowerCase().includes(texto)
       ).slice(0, 10);
 
       coincidencias.forEach(f => {
@@ -216,15 +182,8 @@
 
       sugerencias.style.display = coincidencias.length ? "block" : "none";
     });
-
-    input.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && sugerencias.firstChild) {
-        sugerencias.firstChild.click();
-      }
-    });
   }
 
-  // Seleccionar predio
   function seleccionarPredio(feature) {
     const sugerencias = document.getElementById("sugerencias");
     sugerencias.style.display = "none";
@@ -233,7 +192,7 @@
     if (resaltado) map.removeLayer(resaltado);
 
     resaltado = L.geoJSON(feature, {
-      style: { color: "#ff6600", weight: 3, fillColor: "#ffff99", fillOpacity: 0.6 }
+      style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
     }).addTo(map);
 
     const popupInfo = `
@@ -246,7 +205,6 @@
     map.fitBounds(resaltado.getBounds().pad(1));
   }
 
-  // Botón volver al inicio
   document.getElementById("btnHome").onclick = function() {
     if (resaltado) map.removeLayer(resaltado);
     document.getElementById("inputBusqueda").value = "";
