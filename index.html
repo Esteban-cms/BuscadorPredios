@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Buscador Avanzado de Predios</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+  body { margin:0; padding:0; font-family: Arial, sans-serif; }
+  #map { position:absolute; top:0; bottom:0; width:100%; }
+  #panel {
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:white;
+    padding:10px;
+    z-index:1000;
+    max-height:90%;
+    overflow:auto;
+    box-shadow:0 0 5px rgba(0,0,0,0.5);
+  }
+  input { width:180px; margin-bottom:5px; padding:3px; }
+  button { margin-top:5px; padding:5px 10px; cursor:pointer; }
+  #resultados { margin-top:10px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="panel">
+  <label>PK_PREDIOS:</label><br>
+  <input id="buscarPK" list="matriculas" placeholder="Matrícula..."><br>
+  <label>Vereda:</label><br>
+  <input id="buscarVereda" list="veredas" placeholder="Nombre vereda..."><br>
+  <label>Usos:</label><br>
+  <input id="buscarUsos" list="usos" placeholder="Uso del predio..."><br>
+  <button id="btnBuscar">🔍 Buscar</button>
+  <button id="btnHome">🏠 Casa / Inicio</button>
+  <hr>
+  <div id="resultados"></div>
+
+  <datalist id="matriculas"></datalist>
+  <datalist id="veredas"></datalist>
+  <datalist id="usos"></datalist>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+// Inicializar mapa
+var map = L.map('map').setView([0,0],2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap'
+}).addTo(map);
+
+var prediosLayer, resaltadoLayer, boundsInicial;
+
+// Cargar GeoJSON
+fetch('Predios_Usos_Unidos.geojson')
+.then(res => res.json())
+.then(data => {
+    prediosLayer = L.geoJSON(data, {
+        style: { color:'blue', weight:1, fillOpacity:0.2 },
+        onEachFeature: function(feature, layer){
+            layer.bindPopup(
+                'PK_PREDIOS: '+feature.properties.PK_PREDIOS+'<br>'+
+                'Vereda: '+feature.properties.NOMBRE_VER+'<br>'+
+                'Usos: '+feature.properties.Usos
+            );
+        }
+    }).addTo(map);
+
+    boundsInicial = prediosLayer.getBounds();
+    map.fitBounds(boundsInicial);
+
+    // Autocompletado
+    var datPK = document.getElementById('matriculas');
+    var datVereda = document.getElementById('veredas');
+    var datUsos = document.getElementById('usos');
+    var setPK = new Set(), setVereda = new Set(), setUsos = new Set();
+    data.features.forEach(f=>{
+        setPK.add(f.properties.PK_PREDIOS);
+        setVereda.add(f.properties.NOMBRE_VER);
+        setUsos.add(f.properties.Usos);
+    });
+    setPK.forEach(v=>{ var o=document.createElement('option'); o.value=v; datPK.appendChild(o); });
+    setVereda.forEach(v=>{ var o=document.createElement('option'); o.value=v; datVereda.appendChild(o); });
+    setUsos.forEach(v=>{ var o=document.createElement('option'); o.value=v; datUsos.appendChild(o); });
+});
+
+// Función para buscar predios
+function buscarPredio(){
+    var pk = document.getElementById('buscarPK').value.trim().toLowerCase();
+    var vereda = document.getElementById('buscarVereda').value.trim().toLowerCase();
+    var usos = document.getElementById('buscarUsos').value.trim().toLowerCase();
+
+    if(resaltadoLayer){ map.removeLayer(resaltadoLayer); }
+
+    var encontrados = [];
+    prediosLayer.eachLayer(function(layer){
+        var p = layer.feature.properties;
+        var matchPK = !pk || p.PK_PREDIOS.toLowerCase().includes(pk);
+        var matchVereda = !vereda || p.NOMBRE_VER.toLowerCase().includes(vereda);
+        var matchUsos = !usos || p.Usos.toLowerCase().includes(usos);
+        if(matchPK && matchVereda && matchUsos){ encontrados.push(layer); }
+    });
+
+    var resultadosDiv = document.getElementById('resultados');
+    resultadosDiv.innerHTML = '';
+    if(encontrados.length>0){
+        encontrados.forEach(function(layer){
+            var p = layer.feature.properties;
+            resultadosDiv.innerHTML +=
+                'PK_PREDIOS: '+p.PK_PREDIOS+'<br>'+
+                'Vereda: '+p.NOMBRE_VER+'<br>'+
+                'Usos: '+p.Usos+'<hr>';
+        });
+
+        resaltadoLayer = L.geoJSON(encontrados.map(l=>l.feature), {
+            style:{ color:'red', weight:2, fillColor:'yellow', fillOpacity:0.5 }
+        }).addTo(map);
+
+        var group = L.featureGroup(encontrados);
+        map.fitBounds(group.getBounds().pad(1));
+    } else {
+        resultadosDiv.innerHTML = 'No se encontraron predios con esos filtros';
+    }
+}
+
+// Botón buscar
+document.getElementById('btnBuscar').onclick = buscarPredio;
+
+// Botón casa/inicio
+document.getElementById('btnHome').onclick = function(){
+    if(resaltadoLayer){ map.removeLayer(resaltadoLayer); }
+    document.getElementById('resultados').innerHTML = '';
+    document.getElementById('buscarPK').value='';
+    document.getElementById('buscarVereda').value='';
+    document.getElementById('buscarUsos').value='';
+    map.fitBounds(boundsInicial);
+};
+</script>
+
+</body>
+</html>
