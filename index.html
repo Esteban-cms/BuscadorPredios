@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Explorador Rural - Briceño Antioquia</title>
+  <title>🌿 Explorador Rural - Briceño Antioquia</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -18,11 +18,12 @@
       margin: 0;
       padding: 0;
       font-family: 'Segoe UI', sans-serif;
+      background: #f8faf8;
     }
 
     #map { width: 100%; height: 100%; }
 
-    /* Encabezado superior */
+    /* Encabezado */
     #titulo {
       position: absolute;
       top: 10px;
@@ -31,7 +32,7 @@
       z-index: 1100;
       background: rgba(255,255,255,0.95);
       padding: 10px 20px;
-      border-radius: 10px;
+      border-radius: 12px;
       box-shadow: 0 0 8px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
@@ -45,75 +46,72 @@
       width: 28px;
       height: 28px;
     }
-/* 🔍 Buscador original conservado + lupa blanca */
-#buscador {
-  position: absolute;
-  top: 70px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  width: 320px;
-}
 
-.search-box {
-  display: flex;
-  align-items: center;
-  border-radius: 25px;
-  overflow: hidden;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-}
+    /* 🔍 Buscador */
+    #buscador {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      width: 90%;
+      max-width: 330px;
+    }
 
-#buscador input {
-  flex: 1;
-  padding: 10px 14px;
-  font-size: 13px;
-  border: none;
-  outline: none;
-  border-radius: 25px 0 0 25px;
-  color: #333;
-}
+    .search-box {
+      display: flex;
+      align-items: center;
+      border-radius: 25px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    }
 
-#btnBuscar {
-  background: linear-gradient(90deg, #ff416c, #ff4b2b); /* naranja degradado */
-  border: none;
-  width: 45px;
-  height: 38px;
-  border-radius: 0 25px 25px 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+    #buscador input {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 13px;
+      border: none;
+      outline: none;
+      color: #333;
+    }
 
-#btnBuscar i {
-  color: white; /* lupa blanca */
-  font-size: 16px;
-}
+    #btnBuscar {
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      border: none;
+      width: 45px;
+      height: 38px;
+      border-radius: 0 25px 25px 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-#sugerencias {
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  max-height: 150px;
-  overflow-y: auto;
-  margin-top: 5px;
-  display: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
+    #btnBuscar i { color: white; font-size: 16px; }
 
-#sugerencias div {
-  padding: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
+    #sugerencias {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      margin-top: 5px;
+      display: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
 
-#sugerencias div:hover {
-  background: #f2f2f2;
-}
+    #sugerencias div {
+      padding: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
+    #sugerencias div:hover {
+      background: #f2f2f2;
+    }
 
-    /* Botones del mapa */
+    /* Botones flotantes */
     #btnHome, #btnLocate {
       position: absolute;
       right: 10px;
@@ -122,7 +120,7 @@
       border-radius: 50%;
       border: none;
       color: white;
-      font-size: 20px;
+      font-size: 22px;
       cursor: pointer;
       box-shadow: 0 0 6px rgba(0,0,0,0.3);
       display: flex;
@@ -132,19 +130,18 @@
       z-index: 1000;
     }
 
-    #btnHome {
-      top: 10px;
-      background: #2ECC71;
-    }
-
-    #btnLocate {
-      top: 64px;
-      background: #3498DB;
-    }
+    #btnHome { top: 10px; background: #2ECC71; }
+    #btnLocate { top: 64px; background: #3498DB; }
 
     #btnHome:hover, #btnLocate:hover {
       transform: scale(1.1);
       opacity: 0.9;
+    }
+
+    /* Popup personalizado */
+    .leaflet-popup-content {
+      font-size: 14px;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -155,26 +152,19 @@
     <img src="https://cdn-icons-png.flaticon.com/512/765/765541.png" alt="matica">
     Explorador Rural - Briceño Antioquia
   </div>
-<!-- 🔍 Buscador moderno -->
-<div id="buscador">
-  <div class="search-box">
-    <input 
-      type="text" 
-      id="inputBusqueda" 
-      placeholder="Buscar matrícula PK_PREDIOS..." 
-      autocomplete="off" 
-    />
-    <button id="btnBuscar" title="Buscar">
-      <i class="fas fa-search"></i>
-    </button>
-  </div>
-  <div id="sugerencias"></div>
-</div>
 
+  <!-- Buscador -->
+  <div id="buscador">
+    <div class="search-box">
+      <input type="text" id="inputBusqueda" placeholder="Buscar matrícula PK_PREDIOS..." autocomplete="off" />
+      <button id="btnBuscar" title="Buscar"><i class="fas fa-search"></i></button>
+    </div>
+    <div id="sugerencias"></div>
+  </div>
 
   <!-- Botones -->
-<button id="btnHome" title="Volver al inicio">🏠</button>
-  <button id="btnLocate" title="Mostrar mi ubicación"><button id="btnLocate" title="Mostrar mi ubicación">📍</button></i></button>
+  <button id="btnHome" title="Volver al inicio">🏠</button>
+  <button id="btnLocate" title="Mostrar mi ubicación">📍</button>
 
   <div id="map"></div>
 
@@ -189,7 +179,7 @@
 
     var capaPredios, resaltado, boundsInicial;
 
-    // Cargar capa GeoJSON
+    // Cargar capa GeoJSON (asegúrate que esté en la raíz del repo)
     fetch('Predios_Usos_Unidos_4326.geojson')
       .then(res => res.json())
       .then(data => {
@@ -200,12 +190,8 @@
             fillColor: '#66CCFF',
             fillOpacity: 0.4
           },
-          onEachFeature: function(feature, layer) {
-            // Desactivar popup general
-            layer.on('click', function(e) {
-              e.originalEvent.preventDefault();
-              e.originalEvent.stopPropagation();
-            });
+          onEachFeature: (feature, layer) => {
+            layer.on('click', () => seleccionarPredio(feature));
           }
         }).addTo(map);
 
@@ -243,70 +229,55 @@
         sugerencias.style.display = coincidencias.length ? "block" : "none";
       });
 
-      // Al presionar el botón de buscar
       document.getElementById("btnBuscar").onclick = function() {
         const texto = input.value.trim().toLowerCase();
         const f = features.find(f => f.properties.PK_PREDIOS &&
           f.properties.PK_PREDIOS.toLowerCase() === texto);
         if (f) seleccionarPredio(f);
-        else alert("No se encontró esa matrícula.");
+        else alert("⚠️ No se encontró esa matrícula.");
       };
     }
 
-   // Resaltar y mostrar información del predio
-function seleccionarPredio(feature) {
-  const sugerencias = document.getElementById("sugerencias");
-  sugerencias.style.display = "none";
-  document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
+    // Resaltar y mostrar información
+    function seleccionarPredio(feature) {
+      document.getElementById("sugerencias").style.display = "none";
+      document.getElementById("inputBusqueda").value = feature.properties.PK_PREDIOS;
 
-  if (resaltado) map.removeLayer(resaltado);
+      if (resaltado) map.removeLayer(resaltado);
 
-  // Crear el estilo del predio resaltado
-  resaltado = L.geoJSON(feature, {
-    style: {
-      color: "red",
-      weight: 3,
-      fillColor: "yellow",
-      fillOpacity: 0.5
+      resaltado = L.geoJSON(feature, {
+        style: { color: "red", weight: 3, fillColor: "yellow", fillOpacity: 0.5 }
+      }).addTo(map);
+
+      const info = `
+        <div style="font-size:14px;">
+          <p>🗺️ <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
+          <p>🛣️ <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
+          <p>🚜 <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
+        </div>
+      `;
+
+      resaltado.bindPopup(info).openPopup();
+      map.fitBounds(resaltado.getBounds().pad(1));
     }
-  }).addTo(map);
 
-  // 📍 Contenido del popup con emojis
-  const info = `
-    <div style="font-family: 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6;">
-      <p>🗺️ <b>Predio:</b> ${feature.properties.PK_PREDIOS}</p>
-      <p>🛣️ <b>Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
-      <p>🚜 <b>Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-    </div>
-  `;
-
-  // Mostrar popup con emojis
-  resaltado.bindPopup(info).openPopup();
-
-  // 🔍 Centrar y hacer zoom al predio
-  map.fitBounds(resaltado.getBounds().pad(1));
-}
-
-
-
-    // Botón volver al inicio
+    // Botón inicio
     document.getElementById("btnHome").onclick = function() {
       if (resaltado) map.removeLayer(resaltado);
       document.getElementById("inputBusqueda").value = "";
-      if (boundsInicial && boundsInicial.isValid()) map.fitBounds(boundsInicial);
+      if (boundsInicial?.isValid()) map.fitBounds(boundsInicial);
       else map.setView([7.132, -75.569], 13);
     };
 
-    // Botón geolocalización
+    // Botón ubicación
     document.getElementById("btnLocate").onclick = function() {
       if (!navigator.geolocation) {
-        alert("Geolocalización no soportada por este navegador.");
+        alert("❌ Geolocalización no soportada por este navegador.");
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(position => {
-        const latlng = [position.coords.latitude, position.coords.longitude];
-
+      navigator.geolocation.getCurrentPosition(pos => {
+        const latlng = [pos.coords.latitude, pos.coords.longitude];
         if (window.userMarker) map.removeLayer(window.userMarker);
 
         window.userMarker = L.marker(latlng, {
@@ -315,24 +286,11 @@ function seleccionarPredio(feature) {
             iconSize: [30, 30],
             iconAnchor: [15, 30]
           })
-        }).addTo(map).bindPopup("Tu ubicación actual").openPopup();
+        }).addTo(map).bindPopup("📍 Tu ubicación actual").openPopup();
 
         map.setView(latlng, 16);
-      }, () => alert("No se pudo obtener la ubicación."));
+      }, () => alert("⚠️ No se pudo obtener la ubicación."));
     };
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
