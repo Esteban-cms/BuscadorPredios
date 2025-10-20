@@ -1,207 +1,255 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Briceño en Mapas</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="images.jpg" type="image/png">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: #1a1a1a;
-      color: #fff;
-      display: flex;
-      height: 100vh;
-    }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; }
+    #map { height: 100%; width: 100%; }
 
     /* Panel lateral */
-    #panel {
-      width: 320px;
-      background: #000;
+    #sidebar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 310px;
+      height: 100%;
+      background: #111;
       color: white;
-      display: flex;
-      flex-direction: column;
       padding: 15px;
       box-shadow: 3px 0 10px rgba(0,0,0,0.4);
-      z-index: 1000;
       overflow-y: auto;
+      z-index: 1000;
     }
 
-    #panel img {
-      display: block;
-      margin: 0 auto;
-      width: 90px;
-      height: 90px;
-      border-radius: 50%;
-      border: 3px solid #00a86b;
-    }
-
-    #panel h1 {
+    #sidebar h2 {
       text-align: center;
-      font-size: 1.4em;
-      margin: 10px 0 20px 0;
-      color: #00a86b;
-      letter-spacing: 1px;
+      font-size: 20px;
+      margin-top: 10px;
+      color: #00e676;
     }
 
-    .layer-card {
-      background: #1e1e1e;
-      border-radius: 12px;
-      margin-bottom: 10px;
-      padding: 10px 15px;
-      cursor: pointer;
-      transition: 0.3s;
+    #sidebar img {
+      display: block;
+      margin: 10px auto;
+      width: 90px;
+      border-radius: 8px;
     }
 
-    .layer-card:hover {
-      background: #2a2a2a;
-      transform: scale(1.02);
-    }
-
-    .layer-card input {
-      margin-right: 8px;
-    }
-
-    #buscador {
-      margin-top: 20px;
+    .layer-option {
+      background: #222;
+      border-radius: 8px;
+      padding: 10px;
+      margin: 8px 0;
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.3s;
     }
 
-    #buscador input {
-      flex: 1;
+    .layer-option:hover { background: #333; }
+
+    .layer-option span { font-size: 14px; }
+
+    .layer-option input {
+      width: 18px;
+      height: 18px;
+      accent-color: #00e676;
+    }
+
+    #search-container {
+      background: #222;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      position: relative;
+    }
+
+    #search-input {
+      width: 100%;
       padding: 8px;
-      border-radius: 8px;
+      border-radius: 6px;
       border: none;
       outline: none;
     }
 
-    #info {
-      margin-top: 15px;
-      background: #121212;
-      border-radius: 8px;
-      padding: 10px;
-      font-size: 0.9em;
-      line-height: 1.4em;
-      color: #ddd;
+    /* Estilos del autocompletador */
+    #autocomplete-list {
+      position: absolute;
+      background: #333;
+      border-radius: 6px;
+      z-index: 9999;
+      top: 40px;
+      left: 0;
+      right: 0;
+      max-height: 180px;
+      overflow-y: auto;
     }
 
-    #map {
-      flex: 1;
+    .autocomplete-item {
+      padding: 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #444;
     }
+
+    .autocomplete-item:hover {
+      background: #555;
+    }
+
+    #info-panel {
+      background: #1b1b1b;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #map { margin-left: 310px; }
+
+    .leaflet-popup-content { font-size: 13px; }
   </style>
 </head>
 <body>
-  <div id="panel">
-    <img src="images.jpg" alt="Escudo de Briceño">
-    <h1>Briceño en Mapas</h1>
 
-    <div class="layer-card">
-      <input type="checkbox" id="usos" checked> 🗺️ Usos del Suelo
-    </div>
-    <div class="layer-card">
-      <input type="checkbox" id="amenaza"> ⚠️ Condición de Amenaza Rural
-    </div>
-    <div class="layer-card">
-      <input type="checkbox" id="riesgo"> 🌪️ Condición de Riesgo Rural
+  <!-- Panel lateral -->
+  <div id="sidebar">
+    <img src="escudo_briceno.jpg" alt="Escudo Briceño">
+    <h2>Briceño en Mapas</h2>
+
+    <div id="layers">
+      <div class="layer-option">
+        <span>🟩 Predios Rurales</span>
+        <input type="checkbox" id="chkPredios" checked>
+      </div>
+      <div class="layer-option">
+        <span>🌋 Condición de Amenaza Rural</span>
+        <input type="checkbox" id="chkAmenaza">
+      </div>
+      <div class="layer-option">
+        <span>⚠️ Condición de Riesgo Rural</span>
+        <input type="checkbox" id="chkRiesgo">
+      </div>
+      <div class="layer-option">
+        <span>🛡️ Protección y Gestión del Riesgo</span>
+        <input type="checkbox" id="chkProteccion">
+      </div>
     </div>
 
-    <div id="buscador">
-      <input type="text" id="searchBox" placeholder="Buscar por matrícula...">
+    <div id="search-container">
+      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
+      <div id="autocomplete-list"></div>
+      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">
+        🔍 Buscar
+      </button>
     </div>
 
-    <div id="info">Selecciona un predio o busca por matrícula.</div>
+    <div id="info-panel">
+      <b>ℹ️ Información del predio</b>
+      <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
+    </div>
   </div>
 
   <div id="map"></div>
 
   <script>
-    // Crear mapa base
-    const map = L.map('map').setView([7.052, -75.664], 12);
+    const map = L.map('map').setView([7.132, -75.569], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
+      maxZoom: 20,
+      attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Cargar capas GeoJSON
-    let capaUsos, capaAmenaza, capaRiesgo;
+    let capaPredios, capaAmenaza, capaRiesgo, capaProteccion, resaltado;
+    let listaMatriculas = [];
 
-    fetch('Predios_Usos_Unidos_4326.geojson')
-      .then(r => r.json())
-      .then(data => {
-        capaUsos = L.geoJSON(data, {
-          style: { color: "#00a86b", weight: 1, fillOpacity: 0.4 },
-          onEachFeature: function (feature, layer) {
-            layer.on('click', function() {
-              mostrarInfo(feature.properties);
-            });
-          }
-        }).addTo(map);
-      });
-
-    fetch('Condicion_Amenaza_Rura.geojson')
-      .then(r => r.json())
-      .then(data => {
-        capaAmenaza = L.geoJSON(data, {
-          style: { color: "#ff7300", weight: 1, fillOpacity: 0.5 }
-        });
-      });
-
-    fetch('Condicion_Riesgo_Rural.geojson')
-      .then(r => r.json())
-      .then(data => {
-        capaRiesgo = L.geoJSON(data, {
-          style: { color: "#00e0ff", weight: 1, fillOpacity: 0.4 }
-        });
-      });
-
-    // Mostrar/ocultar capas
-    document.getElementById('usos').addEventListener('change', (e) => {
-      e.target.checked ? capaUsos.addTo(map) : map.removeLayer(capaUsos);
-    });
-
-    document.getElementById('amenaza').addEventListener('change', (e) => {
-      e.target.checked ? capaAmenaza.addTo(map) : map.removeLayer(capaAmenaza);
-    });
-
-    document.getElementById('riesgo').addEventListener('change', (e) => {
-      e.target.checked ? capaRiesgo.addTo(map) : map.removeLayer(capaRiesgo);
-    });
-
-    // Búsqueda por matrícula
-    document.getElementById('searchBox').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        const value = e.target.value.trim();
-        if (!value || !capaUsos) return;
-
-        let encontrado = null;
-        capaUsos.eachLayer(layer => {
-          if (layer.feature.properties.PK_PREDIOS == value) {
-            encontrado = layer;
-          }
-        });
-
-        if (encontrado) {
-          map.fitBounds(encontrado.getBounds());
-          mostrarInfo(encontrado.feature.properties);
-        } else {
-          document.getElementById('info').innerHTML = "No se encontró un predio con esa matrícula.";
+    // Cargar capa de predios
+    fetch('Predios_Usos_Unidos_4326.geojson').then(r => r.json()).then(data => {
+      capaPredios = L.geoJSON(data, {
+        style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
+        onEachFeature: (f, l) => {
+          if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
+          l.on('click', () => mostrarInfo(f));
         }
-      }
+      }).addTo(map);
+      map.fitBounds(capaPredios.getBounds());
     });
 
-    // Mostrar información
-    function mostrarInfo(props) {
-      let html = "<h3>Información del predio</h3>";
-      for (const key in props) {
-        html += `<b>${key}:</b> ${props[key]}<br>`;
-      }
-      document.getElementById('info').innerHTML = html;
+    // Cargar otras capas
+    fetch('Condicion_Amenaza_Rura.geojson').then(r => r.json()).then(data => {
+      capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }});
+    });
+    fetch('Condicion_Riesgo_Rural.geojson').then(r => r.json()).then(data => {
+      capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.2 }});
+    });
+    fetch('Proteccion_GestionRiesgo.geojson').then(r => r.json()).then(data => {
+      capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }});
+    });
+
+    // Mostrar información del predio
+    function mostrarInfo(feature) {
+      const info = document.getElementById('info-content');
+      info.innerHTML = `
+        <p><b>📄 Matrícula:</b> ${feature.properties.PK_PREDIOS || 'Sin dato'}</p>
+        <p><b>🏞️ Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
+        <p><b>🚜 Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
+      `;
+      if (resaltado) map.removeLayer(resaltado);
+      resaltado = L.geoJSON(feature, {
+        style: { color: 'yellow', weight: 3, fillOpacity: 0.1 }
+      }).addTo(map);
+      map.fitBounds(resaltado.getBounds());
     }
+
+    // Autocompletador
+    const input = document.getElementById('search-input');
+    const list = document.getElementById('autocomplete-list');
+
+    input.addEventListener('input', function() {
+      const val = this.value.toLowerCase();
+      list.innerHTML = '';
+      if (!val) return;
+      const coincidencias = listaMatriculas.filter(m => m.toLowerCase().includes(val)).slice(0, 10);
+      coincidencias.forEach(m => {
+        const item = document.createElement('div');
+        item.classList.add('autocomplete-item');
+        item.textContent = m;
+        item.onclick = () => {
+          input.value = m;
+          list.innerHTML = '';
+          buscarPredio(m);
+        };
+        list.appendChild(item);
+      });
+    });
+
+    // Buscar predio por matrícula
+    function buscarPredio(texto) {
+      if (!texto || !capaPredios) return alert('Escribe una matrícula válida.');
+      let encontrado = false;
+      capaPredios.eachLayer(layer => {
+        if (layer.feature.properties.PK_PREDIOS == texto) {
+          mostrarInfo(layer.feature);
+          encontrado = true;
+        }
+      });
+      if (!encontrado) alert('No se encontró ese predio.');
+    }
+
+    document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
+
+    // Checkboxes para mostrar/ocultar capas
+    document.getElementById('chkPredios').onchange = e => e.target.checked ? map.addLayer(capaPredios) : map.removeLayer(capaPredios);
+    document.getElementById('chkAmenaza').onchange = e => e.target.checked ? map.addLayer(capaAmenaza) : map.removeLayer(capaAmenaza);
+    document.getElementById('chkRiesgo').onchange = e => e.target.checked ? map.addLayer(capaRiesgo) : map.removeLayer(capaRiesgo);
+    document.getElementById('chkProteccion').onchange = e => e.target.checked ? map.addLayer(capaProteccion) : map.removeLayer(capaProteccion);
   </script>
 </body>
 </html>
