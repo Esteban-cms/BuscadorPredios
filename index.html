@@ -64,6 +64,18 @@
       accent-color: #00e676;
     }
 
+    #nota-riesgo {
+      font-size: 12px;
+      color: #ccc;
+      background: #1b1b1b;
+      border-left: 3px solid #f44336;
+      padding: 8px;
+      border-radius: 6px;
+      display: none;
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+
     #search-container {
       background: #222;
       border-radius: 10px;
@@ -80,7 +92,6 @@
       outline: none;
     }
 
-    /* Estilos del autocompletador */
     #autocomplete-list {
       position: absolute;
       background: #333;
@@ -137,6 +148,15 @@
         <span>⚠️ Condición de Riesgo Rural</span>
         <input type="checkbox" id="chkRiesgo">
       </div>
+
+      <div id="nota-riesgo">
+        ⚠️ <b>Nota:</b> Estas áreas tienen elementos expuestos:<br>
+        C.E.R El Pescado, Construcción, Construcciones, Red acueducto, Red acueducto - energía, 
+        Red antigua acueducto, Red antigua de acueducto, Red de alcantarillado, 
+        Red de energía rural primaria, Red energía rural, Red energía rural primaria, 
+        Red energía rural secundaria, Red primaria energía rural, Servicios públicos.
+      </div>
+
       <div class="layer-option">
         <span>🛡️ Protección y Gestión del Riesgo</span>
         <input type="checkbox" id="chkProteccion">
@@ -161,7 +181,6 @@
 
   <script>
     const map = L.map('map').setView([7.132, -75.569], 13);
-
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
       attribution: '© OpenStreetMap'
@@ -170,58 +189,43 @@
     let capaPredios, capaAmenaza, capaRiesgo, capaProteccion, resaltado;
     let listaMatriculas = [];
 
-    // Función para calcular el área en hectáreas
-    function calcularArea(feature) {
-      try {
-        const area_m2 = turf.area(feature);
-        return (area_m2 / 10000).toFixed(2) + ' ha';
-      } catch {
-        return 'Sin cálculo';
-      }
-    }
+    // Capa Predios Rurales con cálculo de área
+    fetch('Predios_Usos_Unidos_4326.geojson')
+      .then(r => r.json())
+      .then(data => {
+        capaPredios = L.geoJSON(data, {
+          style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
+          onEachFeature: (f, l) => {
+            if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
+            l.on('click', () => mostrarInfo(f));
+          }
+        }).addTo(map);
+        map.fitBounds(capaPredios.getBounds());
+      });
 
-    // Cargar librería Turf.js para cálculo de área
-    const scriptTurf = document.createElement('script');
-    scriptTurf.src = 'https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js';
-    document.head.appendChild(scriptTurf);
-
-    // Cargar capa de predios
-    fetch('Predios_Usos_Unidos_4326.geojson').then(r => r.json()).then(data => {
-      capaPredios = L.geoJSON(data, {
-        style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
-        onEachFeature: (f, l) => {
-          if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
-          f.properties.area_ha = calcularArea(f);
-          l.on('click', () => mostrarInfo(f));
-        }
-      }).addTo(map);
-      map.fitBounds(capaPredios.getBounds());
-    });
-
-    // Cargar otras capas
+    // Otras capas
     fetch('Condicion_Amenaza_Rura.geojson').then(r => r.json()).then(data => {
-      capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }}); 
+      capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }});
     });
-    fetch('Condicion_Riesgo_Rural.geojson').then(r => r.json()).then(data => {
-      capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.2 }}); 
+    fetch('CondicionRiesgoRural.geojson').then(r => r.json()).then(data => {
+      capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.25 }});
     });
     fetch('Proteccion_GestionRiesgo.geojson').then(r => r.json()).then(data => {
-      capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }}); 
+      capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }});
     });
 
-    // Mostrar información del predio
+    // Mostrar info del predio con área
     function mostrarInfo(feature) {
+      const area = turf.area(feature) / 10000; // metros cuadrados → hectáreas
       const info = document.getElementById('info-content');
       info.innerHTML = `
         <p><b>📄 Matrícula:</b> ${feature.properties.PK_PREDIOS || 'Sin dato'}</p>
         <p><b>🏞️ Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
         <p><b>🚜 Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-        <p><b>📐 Área:</b> ${feature.properties.area_ha || 'Sin cálculo'}</p>
+        <p><b style="color:#00e676;">📏 Área:</b> <b style="color:#00e676;">${area.toFixed(2)} ha</b></p>
       `;
       if (resaltado) map.removeLayer(resaltado);
-      resaltado = L.geoJSON(feature, {
-        style: { color: 'yellow', weight: 3, fillOpacity: 0.1 }
-      }).addTo(map);
+      resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 }}).addTo(map);
       map.fitBounds(resaltado.getBounds());
     }
 
@@ -247,7 +251,7 @@
       });
     });
 
-    // Buscar predio por matrícula
+    // Buscar por matrícula
     function buscarPredio(texto) {
       if (!texto || !capaPredios) return alert('Escribe una matrícula válida.');
       let encontrado = false;
@@ -262,11 +266,23 @@
 
     document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
 
-    // Checkboxes para mostrar/ocultar capas
+    // Checkboxes
     document.getElementById('chkPredios').onchange = e => e.target.checked ? map.addLayer(capaPredios) : map.removeLayer(capaPredios);
     document.getElementById('chkAmenaza').onchange = e => e.target.checked ? map.addLayer(capaAmenaza) : map.removeLayer(capaAmenaza);
-    document.getElementById('chkRiesgo').onchange = e => e.target.checked ? map.addLayer(capaRiesgo) : map.removeLayer(capaRiesgo);
+    document.getElementById('chkRiesgo').onchange = e => {
+      if (e.target.checked) {
+        map.addLayer(capaRiesgo);
+        document.getElementById('nota-riesgo').style.display = 'block';
+      } else {
+        map.removeLayer(capaRiesgo);
+        document.getElementById('nota-riesgo').style.display = 'none';
+      }
+    };
     document.getElementById('chkProteccion').onchange = e => e.target.checked ? map.addLayer(capaProteccion) : map.removeLayer(capaProteccion);
   </script>
+
+  <!-- Turf.js para cálculo de área -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
 </body>
 </html>
