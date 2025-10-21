@@ -230,7 +230,7 @@
   </div>
 
   <script>
-    const map = L.map('map').setView([7.132, -75.569], 13);
+    const map = L.map('map').setView([7.132, -75.569], 9);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
@@ -319,7 +319,7 @@
 
     // 🏠 Volver al inicio
     document.getElementById('btnHome').onclick = () => {
-      map.setView([7.132, -75.569], 20);
+      map.setView([7.132, -75.569], 9);
     };
 
     // 📡 Activar geolocalización
@@ -345,4 +345,5 @@
   </script>
 </body>
 </html>
+
 
