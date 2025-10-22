@@ -3,155 +3,138 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Briceño en Mapas</title>
+  <title>Explorador Rural - Briceño Antioquia</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <style>
-    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; }
-    #map { height: 100%; width: 100%; }
+  <!-- Iconos -->
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-    #sidebar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 310px;
-      height: 100%;
-      background: #111;
-      color: white;
-      padding: 15px;
-      box-shadow: 3px 0 10px rgba(0,0,0,0.4);
-      overflow-y: auto;
-      z-index: 1000;
-    }
-
-    #sidebar h2 { text-align: center; font-size: 20px; margin-top: 10px; color: #00e676; }
-    #sidebar img { display: block; margin: 10px auto; width: 90px; border-radius: 8px; }
-
-    .layer-option { background: #222; border-radius: 8px; padding: 10px; margin: 8px 0;
-      display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background 0.3s; }
-    .layer-option:hover { background: #333; }
-    .layer-option span { font-size: 14px; }
-    .layer-option input { width: 18px; height: 18px; accent-color: #00e676; }
-
-    #search-container { background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; position: relative; }
-    #search-input { width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none; }
-    #autocomplete-list { position: absolute; background: #333; border-radius: 6px; z-index: 9999; top: 40px; left: 0; right: 0; max-height: 180px; overflow-y: auto; }
-    .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #444; }
-    .autocomplete-item:hover { background: #555; }
-
-    #info-panel { background: #1b1b1b; margin-top: 15px; padding: 10px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
-
-    #map { margin-left: 310px; }
-    .leaflet-popup-content { font-size: 13px; }
-
-    .map-buttons {
-      position: absolute; top: 15px; right: 15px;
-      display: flex; flex-direction: column; gap: 10px; z-index: 1500;
-    }
-
-    .map-btn {
-      background: #2f2f2f; border: none; border-radius: 50%; width: 44px; height: 44px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer;
-      transition: background 0.3s; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-
-    .map-btn:hover { background: #4a4a4a; }
-    .map-btn svg { width: 22px; height: 22px; fill: white; }
-    .map-btn::after {
-      content: attr(title); position: absolute; right: 52px; top: 8px;
-      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 6px;
-      font-size: 12px; white-space: nowrap; opacity: 0; transition: opacity 0.3s; pointer-events: none;
-    }
-    .map-btn:hover::after { opacity: 1; }
-  </style>
-</head>
-<body>
-
-  <div id="sidebar">
-    <img src="escudo_briceno.jpg" alt="Escudo Briceño">
-    <h2>Briceño en Mapas</h2>
-
-    <div id="layers">
-      <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
-      <div class="layer-option"><span>🌋 Condición de Amenaza Rural</span><input type="checkbox" id="chkAmenaza"></div>
-      <div class="layer-option"><span>⚠️ Condición de Riesgo Rural</span><input type="checkbox" id="chkRiesgo"></div>
-      <div class="layer-option"><span>🛡️ Protección y Gestión del Riesgo</span><input type="checkbox" id="chkProteccion"></div>
-    </div>
-
-    <div id="search-container">
-      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
-      <div id="autocomplete-list"></div>
-      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">🔍 Buscar</button>
-    </div>
-
-    <div id="info-panel">
-      <b>ℹ️ Información del predio</b>
-      <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
-    </div>
-  </div>
-
-  <div id="map"></div>
-
-  <div class="map-buttons">
-    <button class="map-btn" id="btnHome" title="Volver al inicio">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
-    </button>
-    <button class="map-btn" id="btnLocate" title="Activar mi ubicación">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8h-2a10 10 0 1 0 10-10z"/><circle cx="12" cy="12" r="2.5"/></svg>
-    </button>
-    <button class="map-btn" id="btnCoords" title="Ir a coordenadas">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l4 8h-8l4-8zm0 20l-4-8h8l-4 8zm10-10l-8 4v-8l8 4zm-20 0l8-4v8l-8-4z"/></svg>
-    </button>
-  </div>
-
-  <!-- Librerías Turf y Proj4 para cálculo reproyectado -->
+  <!-- Turf.js y Proj4 para cálculo de área exacta -->
   <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.1/dist/proj4.min.js"></script>
 
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    /* Panel de información */
+    #info {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 15px;
+      border-radius: 12px;
+      max-width: 260px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+    /* Buscador */
+    #search-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 6px 10px;
+      border-radius: 12px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #search-input {
+      width: 160px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+    }
+    #home-btn {
+      background: #0078a8;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #home-btn:hover {
+      background: #005f80;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Buscador y botón de inicio -->
+  <div id="search-container">
+    <i class="fas fa-search"></i>
+    <input id="search-input" type="text" placeholder="Buscar predio..." />
+    <button id="home-btn" title="Inicio"><i class="fas fa-home"></i></button>
+  </div>
+
+  <!-- Panel de información -->
+  <div id="info">
+    <div id="info-content">Selecciona un predio para ver detalles.</div>
+  </div>
+
   <script>
-    const map = L.map('map').setView([7.132, -75.569], 10);
+    // Inicializar mapa
+    const map = L.map('map').setView([7.111, -75.667], 12);
+
+    // Capa base
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20, attribution: '© OpenStreetMap'
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    let capaPredios, capaAmenaza, capaRiesgo, capaProteccion, resaltado;
-    let listaMatriculas = [];
+    let capaPredios, resaltado;
 
-    fetch('Predios_Usos_Unidos_4326.geojson').then(r => r.json()).then(data => {
-      capaPredios = L.geoJSON(data, {
-        style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
-        onEachFeature: (f, l) => {
-          if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
-          l.on('click', () => mostrarInfo(f));
-        }
-      }).addTo(map);
-      map.fitBounds(capaPredios.getBounds());
-    });
+    // Cargar GeoJSON (ajusta la ruta si está en otra carpeta)
+    fetch('Predios_Rurales.geojson')
+      .then(res => res.json())
+      .then(data => {
+        capaPredios = L.geoJSON(data, {
+          style: { color: '#0078a8', weight: 1, fillOpacity: 0.3 },
+          onEachFeature: (feature, layer) => {
+            layer.on('click', () => mostrarInfo(feature));
+          }
+        }).addTo(map);
+        map.fitBounds(capaPredios.getBounds());
+      })
+      .catch(err => console.error('Error cargando GeoJSON:', err));
 
-    fetch('Condicion_Amenaza_Rura.geojson').then(r => r.json()).then(data => {
-      capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    fetch('CondicionRiesgoRural.geojson').then(r => r.json()).then(data => {
-      capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    fetch('Proteccion_GestionRiesgo.geojson').then(r => r.json()).then(data => {
-      capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    // 📏 Calcular área igual a QGIS (proyectando a UTM 18N)
+    // 📏 Calcular área igual a QGIS (EPSG:32618)
     function mostrarInfo(feature) {
       const info = document.getElementById('info-content');
       let areaHa = 'Sin calcular';
 
       try {
-        const f4326 = feature;
-        const f32618 = turf.toMercator(f4326, { mutate: false }); // reproyección a métrico UTM-like
-        const areaM2 = turf.area(f32618);
+        proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+        proj4.defs("EPSG:32618", "+proj=utm +zone=18 +datum=WGS84 +units=m +no_defs");
+
+        const coords4326 = feature.geometry.coordinates;
+        const coords32618 = coords4326.map(ring =>
+          ring.map(coord => proj4("EPSG:4326", "EPSG:32618", coord))
+        );
+
+        const featureUTM = {
+          type: "Feature",
+          geometry: { type: "Polygon", coordinates: coords32618 }
+        };
+
+        const areaM2 = turf.area(featureUTM);
         areaHa = (areaM2 / 10000).toFixed(2) + ' ha';
       } catch (e) {
         console.error('Error al calcular área:', e);
@@ -169,53 +152,32 @@
       map.fitBounds(resaltado.getBounds());
     }
 
+    // 🔍 Buscador de predios
     const input = document.getElementById('search-input');
-    const list = document.getElementById('autocomplete-list');
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter' && capaPredios) {
+        const codigo = input.value.trim();
+        let encontrado = null;
 
-    input.addEventListener('input', function() {
-      const val = this.value.toLowerCase();
-      list.innerHTML = '';
-      if (!val) return;
-      const coincidencias = listaMatriculas.filter(m => m.toLowerCase().includes(val)).slice(0, 10);
-      coincidencias.forEach(m => {
-        const item = document.createElement('div');
-        item.classList.add('autocomplete-item');
-        item.textContent = m;
-        item.onclick = () => { input.value = m; list.innerHTML = ''; buscarPredio(m); };
-        list.appendChild(item);
-      });
+        capaPredios.eachLayer(layer => {
+          if (layer.feature.properties.PK_PREDIOS == codigo) {
+            encontrado = layer.feature;
+          }
+        });
+
+        if (encontrado) {
+          mostrarInfo(encontrado);
+        } else {
+          alert('Predio no encontrado');
+        }
+      }
     });
 
-    function buscarPredio(texto) {
-      if (!texto || !capaPredios) return alert('Escribe una matrícula válida.');
-      let encontrado = false;
-      capaPredios.eachLayer(layer => {
-        if (layer.feature.properties.PK_PREDIOS == texto) {
-          mostrarInfo(layer.feature);
-          encontrado = true;
-        }
-      });
-      if (!encontrado) alert('No se encontró ese predio.');
-    }
-
-    document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
-    document.getElementById('chkPredios').onchange = e => e.target.checked ? map.addLayer(capaPredios) : map.removeLayer(capaPredios);
-    document.getElementById('chkAmenaza').onchange = e => e.target.checked ? map.addLayer(capaAmenaza) : map.removeLayer(capaAmenaza);
-    document.getElementById('chkRiesgo').onchange = e => e.target.checked ? map.addLayer(capaRiesgo) : map.removeLayer(capaRiesgo);
-    document.getElementById('chkProteccion').onchange = e => e.target.checked ? map.addLayer(capaProteccion) : map.removeLayer(capaProteccion);
-
-    document.getElementById('btnHome').onclick = () => { map.setView([7.132, -75.569], 12); };
-    document.getElementById('btnLocate').onclick = () => { map.locate({ setView: true, maxZoom: 17 }); };
-    map.on('locationfound', e => { L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup(); });
-
-    document.getElementById('btnCoords').onclick = () => {
-      const lat = prompt("Ingrese latitud:");
-      const lon = prompt("Ingrese longitud:");
-      if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
-        map.setView([parseFloat(lat), parseFloat(lon)], 16);
-        L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map).bindPopup(`Coordenadas:<br>${lat}, ${lon}`).openPopup();
-      } else alert("Coordenadas no válidas.");
-    };
+    // 🏠 Botón de inicio
+    document.getElementById('home-btn').addEventListener('click', () => {
+      if (capaPredios) map.fitBounds(capaPredios.getBounds());
+      document.getElementById('info-content').innerHTML = 'Selecciona un predio para ver detalles.';
+    });
   </script>
 </body>
 </html>
