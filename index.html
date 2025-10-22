@@ -12,9 +12,8 @@
   <!-- Iconos -->
   <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
-  <!-- Turf.js y Proj4 para cálculo de área exacta -->
+  <!-- Turf para cálculo de área -->
   <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.1/dist/proj4.min.js"></script>
 
   <style>
     html, body {
@@ -25,21 +24,19 @@
       width: 100%;
       height: 100%;
     }
-    /* Panel de información */
     #info {
       position: absolute;
       top: 10px;
       right: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
-      padding: 10px 15px;
-      border-radius: 12px;
-      max-width: 260px;
+      padding: 10px;
+      border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.2);
       font-family: Arial, sans-serif;
       font-size: 14px;
+      max-width: 270px;
     }
-    /* Buscador */
     #search-container {
       position: absolute;
       top: 10px;
@@ -47,14 +44,14 @@
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       padding: 6px 10px;
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: 0 0 8px rgba(0,0,0,0.2);
       display: flex;
       align-items: center;
       gap: 5px;
     }
     #search-input {
-      width: 160px;
+      width: 150px;
       border: none;
       outline: none;
       font-size: 14px;
@@ -72,19 +69,28 @@
     #home-btn:hover {
       background: #005f80;
     }
+    .nota-area {
+      color: #b85c00;
+      font-size: 12px;
+      margin-top: 6px;
+      line-height: 1.3;
+      font-style: italic;
+      border-left: 3px solid #ffb300;
+      padding-left: 6px;
+      background: rgba(255, 230, 170, 0.3);
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Buscador y botón de inicio -->
   <div id="search-container">
     <i class="fas fa-search"></i>
     <input id="search-input" type="text" placeholder="Buscar predio..." />
     <button id="home-btn" title="Inicio"><i class="fas fa-home"></i></button>
   </div>
 
-  <!-- Panel de información -->
   <div id="info">
     <div id="info-content">Selecciona un predio para ver detalles.</div>
   </div>
@@ -101,7 +107,7 @@
 
     let capaPredios, resaltado;
 
-    // Cargar GeoJSON (ajusta la ruta si está en otra carpeta)
+    // Cargar GeoJSON
     fetch('Predios_Rurales.geojson')
       .then(res => res.json())
       .then(data => {
@@ -115,26 +121,15 @@
       })
       .catch(err => console.error('Error cargando GeoJSON:', err));
 
-    // 📏 Calcular área igual a QGIS (EPSG:32618)
+    // 📏 Calcular área (referencial)
     function mostrarInfo(feature) {
       const info = document.getElementById('info-content');
       let areaHa = 'Sin calcular';
 
       try {
-        proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
-        proj4.defs("EPSG:32618", "+proj=utm +zone=18 +datum=WGS84 +units=m +no_defs");
-
-        const coords4326 = feature.geometry.coordinates;
-        const coords32618 = coords4326.map(ring =>
-          ring.map(coord => proj4("EPSG:4326", "EPSG:32618", coord))
-        );
-
-        const featureUTM = {
-          type: "Feature",
-          geometry: { type: "Polygon", coordinates: coords32618 }
-        };
-
-        const areaM2 = turf.area(featureUTM);
+        const f4326 = feature;
+        const f3857 = turf.toMercator(f4326, { mutate: false }); // reproyección aproximada
+        const areaM2 = turf.area(f3857);
         areaHa = (areaM2 / 10000).toFixed(2) + ' ha';
       } catch (e) {
         console.error('Error al calcular área:', e);
@@ -145,6 +140,8 @@
         <p><b>🏞️ Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
         <p><b>🚜 Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
         <p><b>📏 Área:</b> ${areaHa}</p>
+        <p class="nota-area">⚠️ <b>Áreas de referencia.</b><br>
+        Estos valores son aproximados; para conocer el área real del predio, diríjase a la autoridad competente o tramite un replanteo catastral.</p>
       `;
 
       if (resaltado) map.removeLayer(resaltado);
