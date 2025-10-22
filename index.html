@@ -100,6 +100,39 @@
       opacity: 0; transition: opacity 0.3s;
     }
     .map-btn:hover::after { opacity: 1; }
+
+    /* Ventana flotante para ingresar coordenadas */
+    #coord-modal {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1b1b1b;
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      z-index: 2000;
+      display: none;
+      width: 260px;
+    }
+    #coord-modal input {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 6px;
+      background: #2a2a2a;
+      color: white;
+    }
+    #coord-modal button {
+      width: 48%;
+      border: none;
+      border-radius: 6px;
+      padding: 8px;
+      cursor: pointer;
+    }
+    #coord-ok { background: #00e676; color: black; }
+    #coord-cancel { background: #444; color: white; }
   </style>
 </head>
 <body>
@@ -170,19 +203,39 @@
     <button class="map-btn" id="btnLocate" title="Activar mi ubicación">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8h-2a10 10 0 1 0 10-10z"/><circle cx="12" cy="12" r="2.5"/></svg>
     </button>
+
+    <!-- 🆕 Botón para ingresar coordenadas -->
+    <button class="map-btn" id="btnIrCoords" title="Ir a coordenadas">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2Zm0 18a8 8 0 1 1 8-8a8.009 8.009 0 0 1-8 8Zm1-13h-2v5h5v-2h-3Z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- 🆕 Ventana para ingresar coordenadas -->
+  <div id="coord-modal">
+    <h3 style="text-align:center;margin-bottom:10px;">Ir a coordenadas</h3>
+    <label>Latitud:</label>
+    <input type="number" step="any" id="latInput" placeholder="Ej: 7.132">
+    <label>Longitud:</label>
+    <input type="number" step="any" id="lngInput" placeholder="Ej: -75.569">
+    <div style="display:flex;justify-content:space-between;">
+      <button id="coord-ok">Ir</button>
+      <button id="coord-cancel">Cancelar</button>
+    </div>
   </div>
 
   <script>
     const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
 
-    const map = L.map('map').setView([7.132, -75.569], 11);
+    // 🟢 Zoom inicial ajustado
+    const map = L.map('map').fitBounds([[6.95, -75.75], [7.30, -75.40]]);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20, attribution: '© OpenStreetMap'
     }).addTo(map);
 
     let capas = {}, listaMatriculas = [], resaltado;
 
-    // ✅ Función genérica para cargar capas
     function cargarCapa(nombre, archivo, estilo, visible=false) {
       fetch(baseUrl + archivo)
         .then(r => r.json())
@@ -200,7 +253,6 @@
         });
     }
 
-    // Cargar capas
     cargarCapa("Predios", "Predios_Usos_Unidos_4326.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
     cargarCapa("Amenaza", "Condicion_Amenaza_Rura.geojson", { color: "#FF9800", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
@@ -209,7 +261,6 @@
     cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
     cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
 
-    // 📏 Mostrar información del predio
     function mostrarInfo(feature) {
       const info = document.getElementById('info-content');
       let areaHa = "Sin calcular";
@@ -229,7 +280,6 @@
       map.fitBounds(resaltado.getBounds());
     }
 
-    // Buscador
     const input = document.getElementById('search-input');
     const list = document.getElementById('autocomplete-list');
     input.addEventListener('input', function() {
@@ -255,7 +305,6 @@
     }
     document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
 
-    // ✅ Toggle de capas
     const toggles = {
       chkPredios: "Predios",
       chkAmenaza: "Amenaza",
@@ -273,9 +322,41 @@
       };
     }
 
-    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 11);
+    document.getElementById('btnHome').onclick = () => map.fitBounds([[6.95, -75.75], [7.30, -75.40]]);
     document.getElementById('btnLocate').onclick = () => map.locate({ setView: true, maxZoom: 16 });
     map.on('locationfound', e => L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup());
+
+    // 🟢 Botón para ingresar coordenadas manualmente
+    const btnIrCoords = document.getElementById("btnIrCoords");
+    const modal = document.getElementById("coord-modal");
+    const latInput = document.getElementById("latInput");
+    const lngInput = document.getElementById("lngInput");
+    let marcadorManual = null;
+
+    btnIrCoords.onclick = () => {
+      modal.style.display = "block";
+    };
+
+    document.getElementById("coord-cancel").onclick = () => {
+      modal.style.display = "none";
+      latInput.value = "";
+      lngInput.value = "";
+    };
+
+    document.getElementById("coord-ok").onclick = () => {
+      const lat = parseFloat(latInput.value);
+      const lng = parseFloat(lngInput.value);
+      if (isNaN(lat) || isNaN(lng)) {
+        alert("Por favor ingresa valores válidos de latitud y longitud.");
+        return;
+      }
+      if (marcadorManual) map.removeLayer(marcadorManual);
+      marcadorManual = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`📍 Coordenadas ingresadas:<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`)
+        .openPopup();
+      map.setView([lat, lng], 15);
+      modal.style.display = "none";
+    };
   </script>
 </body>
 </html>
