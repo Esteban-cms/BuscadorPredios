@@ -28,19 +28,11 @@
     #sidebar h2 { text-align: center; color: #00e676; margin-bottom: 10px; }
     #sidebar img { display: block; margin: 10px auto; width: 90px; border-radius: 8px; }
 
-    details {
-      background: #222;
-      border-radius: 10px;
-      padding: 10px;
-      margin-top: 10px;
-    }
-    summary { font-weight: bold; cursor: pointer; list-style: none; color: #00e676; }
-
+    details { background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; }
     .layer-option {
       display: flex; justify-content: space-between; align-items: center;
       margin: 5px 0; padding: 6px;
-      background: #1b1b1b;
-      border-radius: 6px;
+      background: #1b1b1b; border-radius: 6px;
     }
     .layer-option input { accent-color: #00e676; }
 
@@ -84,10 +76,7 @@
     }
     .map-btn:hover::after { opacity: 1; }
 
-    /* 🔽 Panel oculto al inicio */
-    details[hidden] {
-      display: none;
-    }
+    details[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -101,34 +90,19 @@
       🗺️ Mostrar Capas
     </button>
 
-    <!-- ✅ Grupo de capas -->
+    <!-- Panel de capas -->
     <details id="capasTematicas" hidden>
-      <summary>🗺️ Capas temáticas</summary>
-
-      <div class="layer-option">
-        <span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked>
-      </div>
-      <div class="layer-option">
-        <span>🌋 Condición de Amenaza</span><input type="checkbox" id="chkAmenaza">
-      </div>
-      <div class="layer-option">
-        <span>⚠️ Condición de Riesgo</span><input type="checkbox" id="chkRiesgo">
-      </div>
-      <div class="layer-option">
-        <span>🛡️ Protección y Gestión</span><input type="checkbox" id="chkProteccion">
-      </div>
+      <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
+      <div class="layer-option"><span>🌋 Amenaza</span><input type="checkbox" id="chkAmenaza"></div>
+      <div class="layer-option"><span>⚠️ Riesgo</span><input type="checkbox" id="chkRiesgo"></div>
+      <div class="layer-option"><span>🛡️ Protección</span><input type="checkbox" id="chkProteccion"></div>
       <hr style="border: 0.5px solid #333;">
-      <div class="layer-option">
-        <span>🏠 Construcciones Rurales</span><input type="checkbox" id="chkConstrucciones">
-      </div>
-      <div class="layer-option">
-        <span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje">
-      </div>
-      <div class="layer-option">
-        <span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas">
-      </div>
+      <div class="layer-option"><span>🏠 Construcciones</span><input type="checkbox" id="chkConstrucciones"></div>
+      <div class="layer-option"><span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje"></div>
+      <div class="layer-option"><span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas"></div>
     </details>
 
+    <!-- Buscador -->
     <div id="search-container">
       <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
       <div id="autocomplete-list"></div>
@@ -145,25 +119,30 @@
 
   <div id="map"></div>
 
+  <!-- Botones flotantes -->
   <div class="map-buttons">
     <button class="map-btn" id="btnHome" title="Volver al inicio">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
+    </button>
+
+    <!-- 📍 Coordenadas -->
+    <button class="map-btn" id="btnCoordenadas" title="Ir a coordenadas">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+    </button>
+
+    <!-- 📡 Ubicación -->
+    <button class="map-btn" id="btnUbicacion" title="Mi ubicación">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0-6a2 2 0 0 1 2 2v2a8 8 0 0 1 6 6h2a2 2 0 0 1 0 4h-2a8 8 0 0 1-6 6v2a2 2 0 0 1-4 0v-2a8 8 0 0 1-6-6h-2a2 2 0 0 1 0-4h2a8 8 0 0 1 6-6V4a2 2 0 0 1 2-2z"/></svg>
     </button>
   </div>
 
   <script>
     const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
-
-    // 🟢 Zoom inicial más cercano
     const map = L.map('map').setView([7.132, -75.569], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OpenStreetMap' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20, attribution: '© OpenStreetMap'
-    }).addTo(map);
+    let capas = {}, resaltado;
 
-    let capas = {}, listaMatriculas = [], resaltado;
-
-    // Función para mostrar información en el panel
     function mostrarInfo(feature, titulo = "Elemento") {
       const info = document.getElementById('info-content');
       info.innerHTML = `<p><b>${titulo}</b></p>`;
@@ -175,24 +154,23 @@
       map.fitBounds(resaltado.getBounds());
     }
 
-    // Cargar capas
-    function cargarCapa(nombre, archivo, estilo, visible=false, campoNombre=null, titulo=null) {
+    function cargarCapa(nombre, archivo, estilo, visible=false, campo=null, titulo=null) {
       fetch(baseUrl + archivo)
         .then(r => r.json())
         .then(data => {
           capas[nombre] = L.geoJSON(data, {
             style: estilo,
             onEachFeature: (f, l) => {
-              if (nombre === "Predios" && f.properties.PK_PREDIOS) {
-                listaMatriculas.push(f.properties.PK_PREDIOS);
-                l.on('click', () => mostrarInfo(f, "Predio Rural"));
-              }
-              if (nombre === "Veredas" && f.properties.NOMBRE_VER) {
-                l.on('click', () => mostrarInfo(f, "Vereda"));
-              }
-              if (nombre === "Drenaje" && f.properties) {
-                l.on('click', () => mostrarInfo(f, "Drenaje Doble"));
-              }
+              // Clic en Predios, Veredas o Drenaje
+              if (nombre === "Predios") l.on('click', () => mostrarInfo(f, "Predio Rural"));
+              if (nombre === "Veredas") l.on('click', () => {
+                const nombreVer = f.properties.NOMBRE_VER || "Sin nombre";
+                mostrarInfo(f, `Vereda: ${nombreVer}`);
+              });
+              if (nombre === "Drenaje") l.on('click', () => {
+                const nombreFuente = f.properties.NMG || "Sin nombre";
+                mostrarInfo(f, `Fuente: ${nombreFuente}`);
+              });
             }
           });
           if (visible) capas[nombre].addTo(map);
@@ -204,15 +182,49 @@
     cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Proteccion", "Proteccion_GestionRiesgo.geojson", { color: "#2196F3", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Construcciones", "ConstruccionesRurales.geojson", { color: "#8BC34A", weight: 1, fillOpacity: 0.3 });
-    cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
-    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 }, false);
+    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 }, false);
 
     document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 13);
-
-    // Mostrar/ocultar capas temáticas
     document.getElementById('btnMostrarCapas').onclick = () => {
       const panel = document.getElementById('capasTematicas');
       panel.hidden = !panel.hidden;
+    };
+
+    // Activar y desactivar capas
+    const checkboxes = {
+      "chkPredios": "Predios",
+      "chkAmenaza": "Amenaza",
+      "chkRiesgo": "Riesgo",
+      "chkProteccion": "Proteccion",
+      "chkConstrucciones": "Construcciones",
+      "chkDrenaje": "Drenaje",
+      "chkVeredas": "Veredas"
+    };
+    Object.entries(checkboxes).forEach(([id, capa]) => {
+      document.getElementById(id).addEventListener('change', (e) => {
+        if (e.target.checked) capas[capa]?.addTo(map);
+        else map.removeLayer(capas[capa]);
+      });
+    });
+
+    // 📍 Coordenadas
+    document.getElementById('btnCoordenadas').onclick = () => {
+      const lat = prompt("Ingrese la latitud:");
+      const lon = prompt("Ingrese la longitud:");
+      if (lat && lon) {
+        L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map).bindPopup(`📍 Coordenadas:<br>${lat}, ${lon}`).openPopup();
+        map.setView([parseFloat(lat), parseFloat(lon)], 15);
+      }
+    };
+
+    // 📡 Ubicación
+    document.getElementById('btnUbicacion').onclick = () => {
+      map.locate({ setView: true, maxZoom: 16 });
+      map.once('locationfound', (e) => {
+        L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup();
+      });
+      map.once('locationerror', () => alert("No se pudo obtener tu ubicación"));
     };
   </script>
 </body>
