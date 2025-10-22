@@ -9,238 +9,210 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Turf.js -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
   <style>
-    html, body, #map {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
+    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; }
+    #map { height: 100%; width: 100%; margin-left: 310px; }
 
-    /* 📌 Botones del mapa */
-    .map-buttons {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 1000;
-    }
-    .map-btn {
-      background-color: #00e676;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      font-size: 20px;
-    }
-
-    /* 📋 Panel lateral (información) */
-    #info-panel {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      width: 270px;
-      background: rgba(0,0,0,0.85);
-      color: white;
+    #sidebar {
+      position: absolute; top: 0; left: 0;
+      width: 310px; height: 100%;
+      background: #111; color: white;
       padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
-      display: none;
-      z-index: 900;
-    }
-    #info-panel h3 {
-      margin-top: 0;
-      color: #00e676;
-      font-size: 16px;
-      border-bottom: 1px solid #00e676;
-      padding-bottom: 5px;
+      box-shadow: 3px 0 10px rgba(0,0,0,0.4);
+      overflow-y: auto; z-index: 1000;
     }
 
-    /* ⚙️ Panel de capas (oculto al inicio) */
-    #layer-panel {
-      position: absolute;
-      top: 70px;
-      left: 20px;
-      width: 240px;
-      background: rgba(0,0,0,0.9);
-      color: white;
-      padding: 15px;
+    #sidebar h2 { text-align: center; color: #00e676; margin-bottom: 10px; }
+    #sidebar img { display: block; margin: 10px auto; width: 90px; border-radius: 8px; }
+
+    details {
+      background: #222;
       border-radius: 10px;
-      display: none;
-      z-index: 950;
+      padding: 10px;
+      margin-top: 10px;
     }
-    #layer-panel label {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-      cursor: pointer;
-    }
-    #layer-panel input {
-      margin-right: 8px;
-    }
+    summary { font-weight: bold; cursor: pointer; list-style: none; color: #00e676; }
 
-    /* 🪟 Ventana para coordenadas */
-    #coord-modal {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
+    .layer-option {
+      display: flex; justify-content: space-between; align-items: center;
+      margin: 5px 0; padding: 6px;
       background: #1b1b1b;
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.5);
-      z-index: 2000;
+      border-radius: 6px;
+    }
+    .layer-option input { accent-color: #00e676; }
+
+    #search-container {
+      background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; position: relative;
+    }
+    #search-input { width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none; }
+
+    #autocomplete-list {
+      position: absolute; background: #333; border-radius: 6px; z-index: 9999;
+      top: 40px; left: 0; right: 0; max-height: 180px; overflow-y: auto;
+    }
+    .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #444; }
+    .autocomplete-item:hover { background: #555; }
+
+    #info-panel {
+      background: #1b1b1b; margin-top: 15px; padding: 10px; border-radius: 10px;
+      font-size: 13px; line-height: 1.5;
+    }
+
+    .map-buttons {
+      position: absolute; top: 15px; right: 15px;
+      display: flex; flex-direction: column; gap: 10px; z-index: 1500;
+    }
+
+    .map-btn {
+      background: #2f2f2f; border: none; border-radius: 50%;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.3s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .map-btn:hover { background: #4a4a4a; }
+    .map-btn svg { width: 22px; height: 22px; fill: white; }
+    .map-btn::after {
+      content: attr(title); position: absolute; right: 52px; top: 8px;
+      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px;
+      border-radius: 6px; font-size: 12px; white-space: nowrap;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .map-btn:hover::after { opacity: 1; }
+
+    /* 🔽 Panel oculto al inicio */
+    details[hidden] {
       display: none;
-      width: 260px;
     }
-    #coord-modal input {
-      width: 100%;
-      padding: 6px;
-      margin-bottom: 10px;
-      border: none;
-      border-radius: 6px;
-      background: #2a2a2a;
-      color: white;
-    }
-    #coord-modal button {
-      width: 48%;
-      border: none;
-      border-radius: 6px;
-      padding: 8px;
-      cursor: pointer;
-    }
-    #coord-ok { background: #00e676; color: black; }
-    #coord-cancel { background: #444; color: white; }
   </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <!-- 🔘 Botones principales -->
-  <div class="map-buttons">
-    <button class="map-btn" id="btnHome" title="Inicio">🏠</button>
-    <button class="map-btn" id="btnLayers" title="Mostrar capas">🗺️</button>
-    <button class="map-btn" id="btnIrCoords" title="Ir a coordenadas">📍</button>
-  </div>
+  <div id="sidebar">
+    <img src="escudo_briceno.jpg" alt="Escudo Briceño">
+    <h2>Briceño en Mapas</h2>
 
-  <!-- 📚 Panel de capas -->
-  <div id="layer-panel">
-    <h3>Capas temáticas</h3>
-    <label><input type="checkbox" id="chkVeredas"> Veredas</label>
-    <label><input type="checkbox" id="chkDrenaje"> Drenaje Doble</label>
-  </div>
+    <!-- Botón para mostrar capas -->
+    <button id="btnMostrarCapas" style="width:100%;padding:8px;background:#00e676;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px;">
+      🗺️ Mostrar Capas
+    </button>
 
-  <!-- 🧾 Panel de información -->
-  <div id="info-panel"></div>
+    <!-- ✅ Grupo de capas -->
+    <details id="capasTematicas" hidden>
+      <summary>🗺️ Capas temáticas</summary>
 
-  <!-- Ventana para ingresar coordenadas -->
-  <div id="coord-modal">
-    <h3 style="text-align:center;margin-bottom:10px;">Ir a coordenadas</h3>
-    <label>Latitud:</label>
-    <input type="number" step="any" id="latInput" placeholder="Ej: 7.132">
-    <label>Longitud:</label>
-    <input type="number" step="any" id="lngInput" placeholder="Ej: -75.569">
-    <div style="display:flex;justify-content:space-between;">
-      <button id="coord-ok">Ir</button>
-      <button id="coord-cancel">Cancelar</button>
+      <div class="layer-option">
+        <span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked>
+      </div>
+      <div class="layer-option">
+        <span>🌋 Condición de Amenaza</span><input type="checkbox" id="chkAmenaza">
+      </div>
+      <div class="layer-option">
+        <span>⚠️ Condición de Riesgo</span><input type="checkbox" id="chkRiesgo">
+      </div>
+      <div class="layer-option">
+        <span>🛡️ Protección y Gestión</span><input type="checkbox" id="chkProteccion">
+      </div>
+      <hr style="border: 0.5px solid #333;">
+      <div class="layer-option">
+        <span>🏠 Construcciones Rurales</span><input type="checkbox" id="chkConstrucciones">
+      </div>
+      <div class="layer-option">
+        <span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje">
+      </div>
+      <div class="layer-option">
+        <span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas">
+      </div>
+    </details>
+
+    <div id="search-container">
+      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
+      <div id="autocomplete-list"></div>
+      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">
+        🔍 Buscar
+      </button>
+    </div>
+
+    <div id="info-panel">
+      <b>ℹ️ Información</b>
+      <div id="info-content">Selecciona un elemento o búscalo por matrícula.</div>
     </div>
   </div>
 
+  <div id="map"></div>
+
+  <div class="map-buttons">
+    <button class="map-btn" id="btnHome" title="Volver al inicio">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
+    </button>
+  </div>
+
   <script>
-    // 🗺️ Inicialización del mapa
-    const map = L.map('map').setView([7.113, -75.574], 13);
+    const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
+
+    // 🟢 Zoom inicial más cercano
+    const map = L.map('map').setView([7.132, -75.569], 13);
+
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
+      maxZoom: 20, attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // 🏠 Botón "Inicio"
-    document.getElementById("btnHome").onclick = () => {
-      map.setView([7.113, -75.574], 13);
-    };
+    let capas = {}, listaMatriculas = [], resaltado;
 
-    // 🗺️ Mostrar / ocultar panel de capas
-    const btnLayers = document.getElementById("btnLayers");
-    const layerPanel = document.getElementById("layer-panel");
-    btnLayers.onclick = () => {
-      layerPanel.style.display = layerPanel.style.display === "block" ? "none" : "block";
-    };
-
-    // 📍 Ventana para coordenadas
-    const btnIrCoords = document.getElementById("btnIrCoords");
-    const modal = document.getElementById("coord-modal");
-    const latInput = document.getElementById("latInput");
-    const lngInput = document.getElementById("lngInput");
-    let marcadorManual = null;
-
-    btnIrCoords.onclick = () => {
-      modal.style.display = "block";
-    };
-    document.getElementById("coord-cancel").onclick = () => modal.style.display = "none";
-    document.getElementById("coord-ok").onclick = () => {
-      const lat = parseFloat(latInput.value);
-      const lng = parseFloat(lngInput.value);
-      if (isNaN(lat) || isNaN(lng)) {
-        alert("Por favor ingresa valores válidos de latitud y longitud.");
-        return;
+    // Función para mostrar información en el panel
+    function mostrarInfo(feature, titulo = "Elemento") {
+      const info = document.getElementById('info-content');
+      info.innerHTML = `<p><b>${titulo}</b></p>`;
+      for (const [key, val] of Object.entries(feature.properties)) {
+        info.innerHTML += `<p><b>${key}:</b> ${val || 'Sin dato'}</p>`;
       }
-      if (marcadorManual) map.removeLayer(marcadorManual);
-      marcadorManual = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`📍 Coordenadas:<br>Lat: ${lat.toFixed(6)}<br>Lng: ${lng.toFixed(6)}`)
-        .openPopup();
-      map.setView([lat, lng], 15);
-      modal.style.display = "none";
-    };
-
-    // 🧾 Panel de información
-    const infoPanel = document.getElementById("info-panel");
-    function mostrarInfo(titulo, atributos) {
-      infoPanel.style.display = "block";
-      infoPanel.innerHTML = `<h3>${titulo}</h3>`;
-      for (const [clave, valor] of Object.entries(atributos)) {
-        infoPanel.innerHTML += `<p><b>${clave}:</b> ${valor || "Sin dato"}</p>`;
-      }
+      if (resaltado) map.removeLayer(resaltado);
+      resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 } }).addTo(map);
+      map.fitBounds(resaltado.getBounds());
     }
 
-    // 🟢 Capa Veredas (campo NOMBRE_VER)
-    const veredasLayer = L.geoJSON(null, {
-      style: { color: "#4cbb17", weight: 1, fillOpacity: 0.1 },
-      onEachFeature: function (feature, layer) {
-        const nombre = feature.properties.NOMBRE_VER || "Sin nombre";
-        layer.on("click", () => {
-          mostrarInfo("Vereda", { "Nombre de la vereda": nombre });
+    // Cargar capas
+    function cargarCapa(nombre, archivo, estilo, visible=false, campoNombre=null, titulo=null) {
+      fetch(baseUrl + archivo)
+        .then(r => r.json())
+        .then(data => {
+          capas[nombre] = L.geoJSON(data, {
+            style: estilo,
+            onEachFeature: (f, l) => {
+              if (nombre === "Predios" && f.properties.PK_PREDIOS) {
+                listaMatriculas.push(f.properties.PK_PREDIOS);
+                l.on('click', () => mostrarInfo(f, "Predio Rural"));
+              }
+              if (nombre === "Veredas" && f.properties.NOMBRE_VER) {
+                l.on('click', () => mostrarInfo(f, "Vereda"));
+              }
+              if (nombre === "Drenaje" && f.properties) {
+                l.on('click', () => mostrarInfo(f, "Drenaje Doble"));
+              }
+            }
+          });
+          if (visible) capas[nombre].addTo(map);
         });
-      }
-    });
+    }
 
-    fetch('Veredas.geojson')
-      .then(res => res.json())
-      .then(data => veredasLayer.addData(data));
+    cargarCapa("Predios", "Predios_Usos_Unidos_4326.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
+    cargarCapa("Amenaza", "Condicion_Amenaza_Rura.geojson", { color: "#FF9800", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Proteccion", "Proteccion_GestionRiesgo.geojson", { color: "#2196F3", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Construcciones", "ConstruccionesRurales.geojson", { color: "#8BC34A", weight: 1, fillOpacity: 0.3 });
+    cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
+    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
 
-    // 🔵 Capa Drenaje Doble (campo NMG)
-    const drenajeDobleLayer = L.geoJSON(null, {
-      style: { color: "#0096FF", weight: 1.3 },
-      onEachFeature: function (feature, layer) {
-        const nombre = feature.properties.NMG || "Sin nombre";
-        layer.on("click", () => {
-          mostrarInfo("Drenaje Doble", { "Nombre de la fuente": nombre });
-        });
-      }
-    });
+    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 13);
 
-    fetch('Drenaje_Doble.geojson')
-      .then(res => res.json())
-      .then(data => drenajeDobleLayer.addData(data));
-
-    // ✅ Activar/Desactivar capas
-    document.getElementById("chkVeredas").onchange = e => {
-      e.target.checked ? veredasLayer.addTo(map) : map.removeLayer(veredasLayer);
-    };
-    document.getElementById("chkDrenaje").onchange = e => {
-      e.target.checked ? drenajeDobleLayer.addTo(map) : map.removeLayer(drenajeDobleLayer);
+    // Mostrar/ocultar capas temáticas
+    document.getElementById('btnMostrarCapas').onclick = () => {
+      const panel = document.getElementById('capasTematicas');
+      panel.hidden = !panel.hidden;
     };
   </script>
 </body>
