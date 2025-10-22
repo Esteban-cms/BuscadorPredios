@@ -8,252 +8,224 @@
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Turf.js -->
-  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+
+  <!-- Autocomplete (awesomplete) -->
+  <link rel="stylesheet" href="https://leaverou.github.io/awesomplete/awesomplete.css" />
+  <script src="https://leaverou.github.io/awesomplete/awesomplete.min.js"></script>
 
   <style>
-    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; }
-    #map { height: 100%; width: 100%; margin-left: 310px; }
-
-    #sidebar {
-      position: absolute; top: 0; left: 0;
-      width: 310px; height: 100%;
-      background: #111; color: white;
-      padding: 15px;
-      box-shadow: 3px 0 10px rgba(0,0,0,0.4);
-      overflow-y: auto; z-index: 1000;
-    }
-
-    #sidebar h2 { text-align: center; color: #00e676; margin-bottom: 10px; }
-    #sidebar img { display: block; margin: 10px auto; width: 90px; border-radius: 8px; }
-
-    details { background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; }
-    .layer-option {
-      display: flex; justify-content: space-between; align-items: center;
-      margin: 5px 0; padding: 6px;
-      background: #1b1b1b; border-radius: 6px;
-    }
-    .layer-option input { accent-color: #00e676; }
-
-    #search-container {
-      background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; position: relative;
-    }
-    #search-input { width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none; }
-
-    #autocomplete-list {
-      position: absolute; background: #333; border-radius: 6px; z-index: 9999;
-      top: 40px; left: 0; right: 0; max-height: 180px; overflow-y: auto;
-    }
-    .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #444; }
-    .autocomplete-item:hover { background: #555; }
-
-    #info-panel {
-      background: #1b1b1b; margin-top: 15px; padding: 10px; border-radius: 10px;
-      font-size: 13px; line-height: 1.5;
-    }
-
-    .map-buttons {
-      position: absolute; top: 15px; right: 15px;
-      display: flex; flex-direction: column; gap: 10px; z-index: 1500;
-    }
-
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
     .map-btn {
-      background: #2f2f2f; border: none; border-radius: 50%;
-      width: 44px; height: 44px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.3s;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-      position: relative;
+      background-color: #00e676;
+      border: none;
+      border-radius: 50%;
+      width: 40px; height: 40px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    .map-btn:hover { background: #4a4a4a; }
-    .map-btn svg { width: 22px; height: 22px; fill: white; }
-    .map-btn::after {
-      content: attr(title); position: absolute; right: 52px; top: 8px;
-      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px;
-      border-radius: 6px; font-size: 12px; white-space: nowrap;
-      opacity: 0; transition: opacity 0.3s;
+    .map-buttons {
+      position: absolute;
+      top: 20px; right: 20px;
+      display: flex; flex-direction: column; gap: 10px;
+      z-index: 1000;
     }
-    .map-btn:hover::after { opacity: 1; }
+    #layer-menu {
+      display: none;
+      position: absolute;
+      top: 80px; right: 20px;
+      background: rgba(0,0,0,0.9);
+      color: white; padding: 10px;
+      border-radius: 10px; z-index: 1000;
+    }
+    #layer-menu label { display: block; margin: 5px 0; }
 
-    /* Modal para coordenadas */
-    #modalCoordenadas {
-      display: none; position: fixed; z-index: 2000;
-      left: 0; top: 0; width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.8);
-      justify-content: center; align-items: center;
+    /* Ventana de coordenadas */
+    #coord-modal {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10,10,10,0.95);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+      z-index: 2000;
+      display: none;
+      width: 260px;
     }
-    #modalContenido {
-      background-color: #111; color: white; padding: 20px;
-      border-radius: 10px; width: 300px; text-align: center;
-      box-shadow: 0 0 10px #00e676;
+    #coord-modal input {
+      width: 100%; padding: 6px; margin-bottom: 10px;
+      border: none; border-radius: 6px;
+      background: #2a2a2a; color: white;
     }
-    #modalContenido input {
-      width: 90%; margin: 8px 0; padding: 8px;
-      border-radius: 6px; border: none; text-align: center;
+    #coord-modal button {
+      width: 48%; border: none; border-radius: 6px;
+      padding: 8px; cursor: pointer;
     }
-    #modalContenido button {
-      margin-top: 10px; padding: 8px 16px; border: none;
-      border-radius: 6px; cursor: pointer; background: #00e676; color: black;
+    #coord-ok { background: #00e676; color: black; }
+    #coord-cancel { background: #444; color: white; }
+
+    /* Panel de información */
+    #info {
+      position: absolute;
+      bottom: 20px; left: 20px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px; border-radius: 10px;
+      max-height: 150px; overflow-y: auto;
+      font-size: 13px; width: 250px;
+    }
+
+    /* Buscador */
+    #search-box {
+      display: none;
+      position: absolute;
+      top: 130px; right: 20px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1000;
+    }
+    #search-box input {
+      width: 200px; padding: 6px;
     }
   </style>
 </head>
 <body>
-
-  <div id="sidebar">
-    <img src="escudo_briceno.jpg" alt="Escudo Briceño">
-    <h2>Briceño en Mapas</h2>
-
-    <!-- Botón para mostrar capas -->
-    <button id="btnMostrarCapas" style="width:100%;padding:8px;background:#00e676;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px;">
-      🗺️ Mostrar Capas
-    </button>
-
-    <!-- Nuevo botón para consultas -->
-    <button id="btnConsulta" style="width:100%;padding:8px;background:#00e676;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px;">
-      🧭 Consulta
-    </button>
-
-    <!-- Panel de capas -->
-    <details id="capasTematicas" hidden>
-      <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
-      <div class="layer-option"><span>🌋 Amenaza</span><input type="checkbox" id="chkAmenaza"></div>
-      <div class="layer-option"><span>⚠️ Riesgo</span><input type="checkbox" id="chkRiesgo"></div>
-      <div class="layer-option"><span>🛡️ Protección</span><input type="checkbox" id="chkProteccion"></div>
-      <hr style="border: 0.5px solid #333;">
-      <div class="layer-option"><span>🏠 Construcciones</span><input type="checkbox" id="chkConstrucciones"></div>
-      <div class="layer-option"><span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje"></div>
-      <div class="layer-option"><span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas"></div>
-    </details>
-
-    <!-- Panel de consulta -->
-    <details id="consultaPanel" hidden>
-      <summary>Elige tu consulta</summary>
-      <select id="consultaSelect" style="width:100%;padding:6px;border-radius:6px;border:none;margin-top:8px;">
-        <option value="">-- Selecciona una capa --</option>
-        <option value="Predios">Predios Rurales</option>
-        <option value="Veredas">Veredas</option>
-        <option value="Drenaje">Drenaje Doble</option>
-      </select>
-    </details>
-
-    <!-- Buscador (solo visible si se elige Predios) -->
-    <div id="search-container" style="display:none;">
-      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
-      <div id="autocomplete-list"></div>
-      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">
-        🔍 Buscar
-      </button>
-    </div>
-
-    <div id="info-panel">
-      <b>ℹ️ Información</b>
-      <div id="info-content">Selecciona un elemento o realiza una consulta.</div>
-    </div>
-  </div>
-
   <div id="map"></div>
 
-  <!-- Botones flotantes -->
   <div class="map-buttons">
-    <button class="map-btn" id="btnHome" title="Volver al inicio">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
-    </button>
-
-    <button class="map-btn" id="btnCoordenadas" title="Ir a coordenadas">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
-    </button>
-
-    <button class="map-btn" id="btnUbicacion" title="Mi ubicación">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0-6a2 2 0 0 1 2 2v2a8 8 0 0 1 6 6h2a2 2 0 0 1 0 4h-2a8 8 0 0 1-6 6v2a2 2 0 0 1-4 0v-2a8 8 0 0 1-6-6h-2a2 2 0 0 1 0-4h2a8 8 0 0 1 6-6V4a2 2 0 0 1 2-2z"/></svg>
-    </button>
+    <button class="map-btn" id="btnHome" title="Inicio">🏠</button>
+    <button class="map-btn" id="btnLocate" title="Mi ubicación">📡</button>
+    <button class="map-btn" id="btnCoords" title="Ir a coordenadas">📍</button>
+    <button class="map-btn" id="btnLayers" title="Mostrar capas">🗂️</button>
   </div>
 
-  <!-- Modal coordenadas -->
-  <div id="modalCoordenadas">
-    <div id="modalContenido">
-      <h3>Ir a coordenadas</h3>
-      <input type="number" id="latitudInput" placeholder="Latitud">
-      <input type="number" id="longitudInput" placeholder="Longitud">
-      <button id="btnIr">Ir</button>
-      <button id="btnCerrar">Cerrar</button>
+  <div id="layer-menu">
+    <label><input type="checkbox" id="predios"> Predios Rurales</label>
+    <label><input type="checkbox" id="veredas"> Veredas</label>
+    <label><input type="checkbox" id="drenaje"> Drenaje Doble</label>
+  </div>
+
+  <div id="coord-modal">
+    <h3 style="text-align:center;margin-bottom:10px;">Ir a coordenadas</h3>
+    <label>Latitud:</label>
+    <input type="number" step="any" id="latInput" placeholder="Ej: 7.132">
+    <label>Longitud:</label>
+    <input type="number" step="any" id="lngInput" placeholder="Ej: -75.569">
+    <div style="display:flex;justify-content:space-between;">
+      <button id="coord-ok">Ir</button>
+      <button id="coord-cancel">Cancelar</button>
     </div>
+  </div>
+
+  <div id="info"><b>Detalles:</b><br>Haz clic sobre una capa para ver información.</div>
+  <div id="search-box">
+    <input id="search-input" placeholder="Buscar matrícula...">
   </div>
 
   <script>
-    const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
-    const map = L.map('map').setView([7.132, -75.569], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20 }).addTo(map);
+    const map = L.map('map').setView([7.113, -75.574], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
 
-    let capas = {}, resaltado;
+    // Botón Inicio
+    document.getElementById("btnHome").onclick = () => map.setView([7.113, -75.574], 13);
 
-    function mostrarInfo(feature, titulo = "Elemento") {
-      const info = document.getElementById('info-content');
-      info.innerHTML = `<p><b>${titulo}</b></p>`;
-      for (const [key, val] of Object.entries(feature.properties)) {
-        info.innerHTML += `<p><b>${key}:</b> ${val || 'Sin dato'}</p>`;
+    // Botón mostrar capas
+    document.getElementById("btnLayers").onclick = () => {
+      const menu = document.getElementById("layer-menu");
+      menu.style.display = (menu.style.display === "none" || menu.style.display === "") ? "block" : "none";
+    };
+
+    // 📡 Localización del usuario
+    document.getElementById("btnLocate").onclick = () => {
+      map.locate({ setView: true, maxZoom: 16 });
+    };
+
+    // 📍 Coordenadas (ventana negra)
+    const coordModal = document.getElementById("coord-modal");
+    document.getElementById("btnCoords").onclick = () => coordModal.style.display = "block";
+    document.getElementById("coord-cancel").onclick = () => coordModal.style.display = "none";
+    document.getElementById("coord-ok").onclick = () => {
+      const lat = parseFloat(document.getElementById("latInput").value);
+      const lng = parseFloat(document.getElementById("lngInput").value);
+      if (isNaN(lat) || isNaN(lng)) return alert("Coordenadas inválidas");
+      L.marker([lat, lng]).addTo(map).bindPopup(`📍 Lat: ${lat}, Lng: ${lng}`).openPopup();
+      map.setView([lat, lng], 15);
+      coordModal.style.display = "none";
+    };
+
+    // Capas GeoJSON
+    const info = document.getElementById("info");
+    const prediosLayer = L.geoJSON(null, {
+      onEachFeature: (f, l) => {
+        l.on("click", () => {
+          info.innerHTML = `<b>Detalles del predio:</b><br>PK_PREDIOS: ${f.properties.PK_PREDIOS}`;
+        });
+      },
+      style: { color: "#ff8000", weight: 1 }
+    });
+
+    const veredasLayer = L.geoJSON(null, {
+      onEachFeature: (f, l) => {
+        l.on("click", () => {
+          info.innerHTML = `<b>Vereda:</b> ${f.properties.NOMBRE_VER || "Sin nombre"}`;
+        });
+      },
+      style: { color: "#2ecc71", weight: 1 }
+    });
+
+    const drenajeLayer = L.geoJSON(null, {
+      onEachFeature: (f, l) => {
+        l.on("click", () => {
+          info.innerHTML = `<b>Drenaje:</b> ${f.properties.NMG || "Sin nombre"}`;
+        });
+      },
+      style: { color: "#3498db", weight: 1.3 }
+    });
+
+    // Fetch capas
+    fetch('Predios_Rurales.geojson').then(r => r.json()).then(d => prediosLayer.addData(d));
+    fetch('Veredas.geojson').then(r => r.json()).then(d => veredasLayer.addData(d));
+    fetch('Drenaje_Doble.geojson').then(r => r.json()).then(d => drenajeLayer.addData(d));
+
+    // Checkboxes
+    document.getElementById("predios").onchange = (e) => {
+      if (e.target.checked) {
+        prediosLayer.addTo(map);
+        document.getElementById("search-box").style.display = "block";
+      } else {
+        map.removeLayer(prediosLayer);
+        document.getElementById("search-box").style.display = "none";
       }
-      if (resaltado) map.removeLayer(resaltado);
-      resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 } }).addTo(map);
-      map.fitBounds(resaltado.getBounds());
-    }
+    };
+    document.getElementById("veredas").onchange = (e) => e.target.checked ? veredasLayer.addTo(map) : map.removeLayer(veredasLayer);
+    document.getElementById("drenaje").onchange = (e) => e.target.checked ? drenajeLayer.addTo(map) : map.removeLayer(drenajeLayer);
 
-    function cargarCapa(nombre, archivo, estilo, visible=false) {
-      fetch(baseUrl + archivo)
+    // Autocompletado PK_PREDIOS
+    let predios = [];
+    fetch('Predios_Rurales.geojson')
+      .then(r => r.json())
+      .then(data => {
+        predios = data.features.map(f => f.properties.PK_PREDIOS);
+        new Awesomplete(document.getElementById("search-input"), { list: predios });
+      });
+
+    document.getElementById("search-input").addEventListener("awesomplete-selectcomplete", e => {
+      const valor = e.text.value;
+      fetch('Predios_Rurales.geojson')
         .then(r => r.json())
         .then(data => {
-          capas[nombre] = L.geoJSON(data, {
-            style: estilo,
-            onEachFeature: (f, l) => {
-              l.on('click', () => mostrarInfo(f, nombre));
-            }
-          });
-          if (visible) capas[nombre].addTo(map);
+          const feature = data.features.find(f => f.properties.PK_PREDIOS == valor);
+          if (feature) {
+            const coords = feature.geometry.coordinates[0][0];
+            const centro = [coords[1], coords[0]];
+            map.setView(centro, 17);
+            L.popup().setLatLng(centro).setContent(`<b>Predio:</b> ${valor}`).openOn(map);
+          }
         });
-    }
-
-    cargarCapa("Predios", "Predios_Usos_Unidos_4326.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
-    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
-    cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
-
-    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 13);
-
-    document.getElementById('btnMostrarCapas').onclick = () => {
-      const p = document.getElementById('capasTematicas');
-      p.hidden = !p.hidden;
-    };
-
-    document.getElementById('btnConsulta').onclick = () => {
-      const p = document.getElementById('consultaPanel');
-      p.hidden = !p.hidden;
-    };
-
-    // Mostrar buscador solo si elige Predios
-    document.getElementById('consultaSelect').onchange = (e) => {
-      document.getElementById('search-container').style.display =
-        e.target.value === "Predios" ? "block" : "none";
-    };
-
-    // 📍 Coordenadas modal
-    const modal = document.getElementById('modalCoordenadas');
-    document.getElementById('btnCoordenadas').onclick = () => modal.style.display = "flex";
-    document.getElementById('btnCerrar').onclick = () => modal.style.display = "none";
-    document.getElementById('btnIr').onclick = () => {
-      const lat = parseFloat(document.getElementById('latitudInput').value);
-      const lon = parseFloat(document.getElementById('longitudInput').value);
-      if (!isNaN(lat) && !isNaN(lon)) {
-        L.marker([lat, lon]).addTo(map).bindPopup(`📍 ${lat}, ${lon}`).openPopup();
-        map.setView([lat, lon], 15);
-      }
-      modal.style.display = "none";
-    };
-
-    // 📡 Ubicación
-    document.getElementById('btnUbicacion').onclick = () => {
-      map.locate({ setView: true, maxZoom: 16 });
-      map.once('locationfound', (e) => {
-        L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup();
-      });
-    };
+    });
   </script>
 </body>
 </html>
