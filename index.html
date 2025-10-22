@@ -9,9 +9,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Awesomplete (autocompletado) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+  <!-- Turf.js -->
+  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
   <style>
     html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; }
@@ -29,22 +28,27 @@
     #sidebar h2 { text-align: center; color: #00e676; margin-bottom: 10px; }
     #sidebar img { display: block; margin: 10px auto; width: 90px; border-radius: 8px; }
 
+    details { background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; }
     .layer-option {
       display: flex; justify-content: space-between; align-items: center;
       margin: 5px 0; padding: 6px;
       background: #1b1b1b; border-radius: 6px;
     }
-
     .layer-option input { accent-color: #00e676; }
 
-    #search-box {
+    #search-container {
       background: #222; border-radius: 10px; padding: 10px; margin-top: 10px; position: relative;
-      display: none;
     }
-    #search-input {
-      width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none;
+    #search-input { width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none; }
+
+    #autocomplete-list {
+      position: absolute; background: #333; border-radius: 6px; z-index: 9999;
+      top: 40px; left: 0; right: 0; max-height: 180px; overflow-y: auto;
     }
-    #info {
+    .autocomplete-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #444; }
+    .autocomplete-item:hover { background: #555; }
+
+    #info-panel {
       background: #1b1b1b; margin-top: 15px; padding: 10px; border-radius: 10px;
       font-size: 13px; line-height: 1.5;
     }
@@ -62,25 +66,17 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.5);
       position: relative;
     }
-
     .map-btn:hover { background: #4a4a4a; }
     .map-btn svg { width: 22px; height: 22px; fill: white; }
+    .map-btn::after {
+      content: attr(title); position: absolute; right: 52px; top: 8px;
+      background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px;
+      border-radius: 6px; font-size: 12px; white-space: nowrap;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .map-btn:hover::after { opacity: 1; }
 
-    #coord-modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000;
-    }
-
-    #coord-box {
-      background: #111; padding: 20px; border-radius: 10px; text-align: center; color: white;
-    }
-    #coord-box input {
-      width: 90%; padding: 8px; margin: 6px 0; border-radius: 6px; border: none; text-align: center;
-      background: #333; color: #fff;
-    }
-    #coord-box button {
-      background: #00e676; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer;
-    }
+    details[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -89,28 +85,35 @@
     <img src="escudo_briceno.jpg" alt="Escudo Briceño">
     <h2>Briceño en Mapas</h2>
 
-    <button id="btnMostrarCapas" style="width:100%;background:#00e676;color:black;border:none;border-radius:6px;padding:8px;cursor:pointer;">
-      Mostrar capas
+    <!-- Botón para mostrar capas -->
+    <button id="btnMostrarCapas" style="width:100%;padding:8px;background:#00e676;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px;">
+      🗺️ Mostrar Capas
     </button>
 
-    <div id="capas" style="display:none;margin-top:10px;">
-      <div class="layer-option">
-        <span>🟩 Predios Rurales</span><input type="checkbox" id="predios">
-      </div>
-      <div class="layer-option">
-        <span>🗺️ Veredas</span><input type="checkbox" id="veredas">
-      </div>
-      <div class="layer-option">
-        <span>💧 Drenaje Doble</span><input type="checkbox" id="drenaje">
-      </div>
+    <!-- Panel de capas -->
+    <details id="capasTematicas" hidden>
+      <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
+      <div class="layer-option"><span>🌋 Amenaza</span><input type="checkbox" id="chkAmenaza"></div>
+      <div class="layer-option"><span>⚠️ Riesgo</span><input type="checkbox" id="chkRiesgo"></div>
+      <div class="layer-option"><span>🛡️ Protección</span><input type="checkbox" id="chkProteccion"></div>
+      <hr style="border: 0.5px solid #333;">
+      <div class="layer-option"><span>🏠 Construcciones</span><input type="checkbox" id="chkConstrucciones"></div>
+      <div class="layer-option"><span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje"></div>
+      <div class="layer-option"><span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas"></div>
+    </details>
+
+    <!-- Buscador -->
+    <div id="search-container">
+      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
+      <div id="autocomplete-list"></div>
+      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">
+        🔍 Buscar
+      </button>
     </div>
 
-    <div id="search-box">
-      <input id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)" />
-    </div>
-
-    <div id="info">
-      <b>ℹ️ Información</b><br>Activa una capa y haz clic en el mapa.
+    <div id="info-panel">
+      <b>ℹ️ Información</b>
+      <div id="info-content">Selecciona un elemento o búscalo por matrícula.</div>
     </div>
   </div>
 
@@ -121,129 +124,107 @@
     <button class="map-btn" id="btnHome" title="Volver al inicio">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
     </button>
-    <button class="map-btn" id="btnLocate" title="Activar mi ubicación">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8h-2a10 10 0 1 0 10-10z"/><circle cx="12" cy="12" r="2.5"/></svg>
-    </button>
-    <button class="map-btn" id="btnCoords" title="Ir a coordenadas">
-      📍
-    </button>
-  </div>
 
-  <!-- Modal para coordenadas -->
-  <div id="coord-modal">
-    <div id="coord-box">
-      <h3>📍 Ir a coordenadas</h3>
-      <input id="lat" placeholder="Latitud (ej: 7.123)" />
-      <input id="lng" placeholder="Longitud (ej: -75.567)" />
-      <br><button id="goCoords">Ir</button>
-      <br><br><button id="closeCoords" style="background:#e74c3c;">Cerrar</button>
-    </div>
+    <!-- 📍 Coordenadas -->
+    <button class="map-btn" id="btnCoordenadas" title="Ir a coordenadas">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+    </button>
+
+    <!-- 📡 Ubicación -->
+    <button class="map-btn" id="btnUbicacion" title="Mi ubicación">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0-6a2 2 0 0 1 2 2v2a8 8 0 0 1 6 6h2a2 2 0 0 1 0 4h-2a8 8 0 0 1-6 6v2a2 2 0 0 1-4 0v-2a8 8 0 0 1-6-6h-2a2 2 0 0 1 0-4h2a8 8 0 0 1 6-6V4a2 2 0 0 1 2-2z"/></svg>
+    </button>
   </div>
 
   <script>
-    const map = L.map('map').setView([7.113, -75.574], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
+    const map = L.map('map').setView([7.132, -75.569], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OpenStreetMap' }).addTo(map);
 
-    // Botones
-    document.getElementById("btnHome").onclick = () => map.setView([7.113, -75.574], 13);
-    document.getElementById("btnLocate").onclick = () => map.locate({ setView: true, maxZoom: 16 });
-    map.on('locationfound', e => L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup());
+    let capas = {}, resaltado;
 
-    // Mostrar/Ocultar capas
-    document.getElementById("btnMostrarCapas").onclick = () => {
-      const c = document.getElementById("capas");
-      c.style.display = c.style.display === "none" ? "block" : "none";
-    };
+    function mostrarInfo(feature, titulo = "Elemento") {
+      const info = document.getElementById('info-content');
+      info.innerHTML = `<p><b>${titulo}</b></p>`;
+      for (const [key, val] of Object.entries(feature.properties)) {
+        info.innerHTML += `<p><b>${key}:</b> ${val || 'Sin dato'}</p>`;
+      }
+      if (resaltado) map.removeLayer(resaltado);
+      resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 } }).addTo(map);
+      map.fitBounds(resaltado.getBounds());
+    }
 
-    // Cargar capas
-    const capaPredios = L.geoJSON(null, {
-      onEachFeature: (f, l) => l.on('click', () => {
-        const p = f.properties;
-        document.getElementById("info").innerHTML = `
-          <b>📄 Matrícula:</b> ${p.PK_PREDIOS || 'Sin dato'}<br>
-          <b>Vereda:</b> ${p.NOMBRE_VER || 'Sin dato'}<br>
-          <b>Uso:</b> ${p.Usos || 'Sin dato'}
-        `;
-      }),
-      style: { color: "#00e676", weight: 1, fillOpacity: 0.3 }
-    });
-
-    const capaVeredas = L.geoJSON(null, {
-      onEachFeature: (f, l) => l.on('click', () => {
-        const p = f.properties;
-        document.getElementById("info").innerHTML = `
-          <b>Vereda:</b> ${p.NOMBRE_VER || 'Sin nombre'}
-        `;
-      }),
-      style: { color: "#4cbb17", weight: 1, fillOpacity: 0.1 }
-    });
-
-    const capaDrenaje = L.geoJSON(null, {
-      onEachFeature: (f, l) => l.on('click', () => {
-        const p = f.properties;
-        document.getElementById("info").innerHTML = `
-          <b>Fuente:</b> ${p.NMG || 'Sin nombre'}
-        `;
-      }),
-      style: { color: "#03A9F4", weight: 1.2 }
-    });
-
-    // Archivos GeoJSON (usa tus rutas)
-    fetch("Predios_Rurales.geojson").then(r => r.json()).then(d => capaPredios.addData(d));
-    fetch("Veredas.geojson").then(r => r.json()).then(d => capaVeredas.addData(d));
-    fetch("Drenaje_Doble.geojson").then(r => r.json()).then(d => capaDrenaje.addData(d));
-
-    // Activar capas
-    document.getElementById("predios").onchange = e => {
-      if (e.target.checked) { capaPredios.addTo(map); document.getElementById("search-box").style.display = "block"; }
-      else { map.removeLayer(capaPredios); document.getElementById("search-box").style.display = "none"; }
-    };
-
-    document.getElementById("veredas").onchange = e => {
-      if (e.target.checked) capaVeredas.addTo(map); else map.removeLayer(capaVeredas);
-    };
-
-    document.getElementById("drenaje").onchange = e => {
-      if (e.target.checked) capaDrenaje.addTo(map); else map.removeLayer(capaDrenaje);
-    };
-
-    // Autocompletado PK_PREDIOS
-    let listaPredios = [];
-    fetch("Predios_Rurales.geojson")
-      .then(r => r.json())
-      .then(data => {
-        listaPredios = data.features.map(f => f.properties.PK_PREDIOS);
-        new Awesomplete(document.getElementById("search-input"), { list: listaPredios });
-      });
-
-    document.getElementById("search-input").addEventListener("awesomplete-selectcomplete", e => {
-      const pk = e.text.value;
-      fetch("Predios_Rurales.geojson")
+    function cargarCapa(nombre, archivo, estilo, visible=false, campo=null, titulo=null) {
+      fetch(baseUrl + archivo)
         .then(r => r.json())
         .then(data => {
-          const f = data.features.find(x => x.properties.PK_PREDIOS == pk);
-          if (f) {
-            const c = turf.center(f).geometry.coordinates;
-            map.setView([c[1], c[0]], 17);
-            L.popup().setLatLng([c[1], c[0]]).setContent(`<b>Predio:</b> ${pk}`).openOn(map);
-          }
+          capas[nombre] = L.geoJSON(data, {
+            style: estilo,
+            onEachFeature: (f, l) => {
+              // Clic en Predios, Veredas o Drenaje
+              if (nombre === "Predios") l.on('click', () => mostrarInfo(f, "Predio Rural"));
+              if (nombre === "Veredas") l.on('click', () => {
+                const nombreVer = f.properties.NOMBRE_VER || "Sin nombre";
+                mostrarInfo(f, `Vereda: ${nombreVer}`);
+              });
+              if (nombre === "Drenaje") l.on('click', () => {
+                const nombreFuente = f.properties.NMG || "Sin nombre";
+                mostrarInfo(f, `Fuente: ${nombreFuente}`);
+              });
+            }
+          });
+          if (visible) capas[nombre].addTo(map);
         });
+    }
+
+    cargarCapa("Predios", "Predios_Usos_Unidos_4326.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
+    cargarCapa("Amenaza", "Condicion_Amenaza_Rura.geojson", { color: "#FF9800", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Proteccion", "Proteccion_GestionRiesgo.geojson", { color: "#2196F3", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Construcciones", "ConstruccionesRurales.geojson", { color: "#8BC34A", weight: 1, fillOpacity: 0.3 });
+    cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 }, false);
+    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 }, false);
+
+    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 13);
+    document.getElementById('btnMostrarCapas').onclick = () => {
+      const panel = document.getElementById('capasTematicas');
+      panel.hidden = !panel.hidden;
+    };
+
+    // Activar y desactivar capas
+    const checkboxes = {
+      "chkPredios": "Predios",
+      "chkAmenaza": "Amenaza",
+      "chkRiesgo": "Riesgo",
+      "chkProteccion": "Proteccion",
+      "chkConstrucciones": "Construcciones",
+      "chkDrenaje": "Drenaje",
+      "chkVeredas": "Veredas"
+    };
+    Object.entries(checkboxes).forEach(([id, capa]) => {
+      document.getElementById(id).addEventListener('change', (e) => {
+        if (e.target.checked) capas[capa]?.addTo(map);
+        else map.removeLayer(capas[capa]);
+      });
     });
 
-    // Coordenadas
-    const modal = document.getElementById("coord-modal");
-    document.getElementById("btnCoords").onclick = () => modal.style.display = "flex";
-    document.getElementById("closeCoords").onclick = () => modal.style.display = "none";
-    document.getElementById("goCoords").onclick = () => {
-      const lat = parseFloat(document.getElementById("lat").value);
-      const lng = parseFloat(document.getElementById("lng").value);
-      if (isNaN(lat) || isNaN(lng)) return alert("Coordenadas inválidas");
-      modal.style.display = "none";
-      map.setView([lat, lng], 17);
-      L.marker([lat, lng]).addTo(map).bindPopup(`📍 ${lat}, ${lng}`).openPopup();
+    // 📍 Coordenadas
+    document.getElementById('btnCoordenadas').onclick = () => {
+      const lat = prompt("Ingrese la latitud:");
+      const lon = prompt("Ingrese la longitud:");
+      if (lat && lon) {
+        L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map).bindPopup(`📍 Coordenadas:<br>${lat}, ${lon}`).openPopup();
+        map.setView([parseFloat(lat), parseFloat(lon)], 15);
+      }
+    };
+
+    // 📡 Ubicación
+    document.getElementById('btnUbicacion').onclick = () => {
+      map.locate({ setView: true, maxZoom: 16 });
+      map.once('locationfound', (e) => {
+        L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup();
+      });
+      map.once('locationerror', () => alert("No se pudo obtener tu ubicación"));
     };
   </script>
 </body>
