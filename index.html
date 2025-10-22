@@ -139,13 +139,16 @@
 
     let capas = {}, resaltado, listaPredios = [];
 
-    // Mostrar info
-    function mostrarInfo(feature, titulo = "Elemento") {
+    // Mostrar info de un predio
+    function mostrarPredio(feature) {
+      const p = feature.properties;
       const info = document.getElementById('info-content');
-      info.innerHTML = `<p><b>${titulo}</b></p>`;
-      for (const [key, val] of Object.entries(feature.properties)) {
-        info.innerHTML += `<p><b>${key}:</b> ${val || 'Sin dato'}</p>`;
-      }
+      info.innerHTML = `
+        <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
+        <p><b>Vereda:</b> ${p.NOMBRE_VER || 'Sin nombre'}</p>
+        <p><b>Uso:</b> ${p.Usos || 'Sin dato'}</p>
+        <p><b>Área (ha):</b> ${p["Area ha"] || 'Sin dato'}</p>
+      `;
       if (resaltado) map.removeLayer(resaltado);
       resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 } }).addTo(map);
       map.fitBounds(resaltado.getBounds());
@@ -159,9 +162,7 @@
           capas[nombre] = L.geoJSON(data, {
             style: estilo,
             onEachFeature: (f, l) => {
-              if (nombre === "Predios") l.on('click', () => mostrarInfo(f, "Predio Rural"));
-              if (nombre === "Veredas") l.on('click', () => mostrarInfo(f, `Vereda: ${f.properties.NOMBRE_VER || "Sin nombre"}`));
-              if (nombre === "Drenaje") l.on('click', () => mostrarInfo(f, `Fuente: ${f.properties.NMG || "Sin nombre"}`));
+              if (nombre === "Predios") l.on('click', () => mostrarPredio(f));
             }
           });
           if (visible) capas[nombre].addTo(map);
@@ -169,7 +170,10 @@
         });
     }
 
-    cargarCapa("Predios", "Predios_Usos_Unidos_4326.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
+    // Cambiada la capa aquí 👇
+    cargarCapa("Predios", "Predios_Usos_Agrupados.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
+
+    // --- (resto de capas igual que antes)
     cargarCapa("Amenaza", "Condicion_Amenaza_Rura.geojson", { color: "#FF9800", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Proteccion", "Proteccion_GestionRiesgo.geojson", { color: "#2196F3", weight: 1, fillOpacity: 0.2 });
@@ -177,33 +181,9 @@
     cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
     cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
 
-    // Control de capas
-    const checkboxes = {
-      "chkPredios": "Predios", "chkAmenaza": "Amenaza", "chkRiesgo": "Riesgo",
-      "chkProteccion": "Proteccion", "chkConstrucciones": "Construcciones",
-      "chkDrenaje": "Drenaje", "chkVeredas": "Veredas"
-    };
-    Object.entries(checkboxes).forEach(([id, capa]) => {
-      document.getElementById(id).addEventListener('change', (e) => {
-        if (e.target.checked) {
-          capas[capa]?.addTo(map);
-          if (capa === "Predios") activarAutocomplete(true);
-        } else {
-          map.removeLayer(capas[capa]);
-          if (capa === "Predios") activarAutocomplete(false);
-        }
-      });
-    });
-
-    // Autocompletado
+    // Buscador
     const input = document.getElementById("search-input");
     const list = document.getElementById("autocomplete-list");
-
-    function activarAutocomplete(estado) {
-      input.disabled = !estado;
-      list.innerHTML = "";
-      if (!estado) input.value = "";
-    }
 
     input.addEventListener("input", () => {
       const val = input.value.toLowerCase();
@@ -222,41 +202,23 @@
       });
     });
 
-    document.getElementById("btnBuscar").onclick = () => buscarPredio(input.value);
-
     function buscarPredio(pk) {
       if (!pk) return alert("Escribe una matrícula válida");
-      fetch(baseUrl + "Predios_Usos_Unidos_4326.geojson")
+      fetch(baseUrl + "Predios_Usos_Agrupados.geojson")
         .then(r => r.json())
         .then(data => {
           const f = data.features.find(x => x.properties.PK_PREDIOS == pk);
           if (!f) return alert("No encontrado");
-          mostrarInfo(f, "Predio");
+          mostrarPredio(f);
         });
     }
 
-    // Botones
-    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 13);
+    document.getElementById("btnBuscar").onclick = () => buscarPredio(input.value);
+    document.getElementById("btnHome").onclick = () => map.setView([7.132, -75.569], 13);
+
     document.getElementById('btnMostrarCapas').onclick = () => {
       const panel = document.getElementById('capasTematicas');
       panel.hidden = !panel.hidden;
-    };
-
-    document.getElementById('btnCoordenadas').onclick = () => {
-      const lat = prompt("Ingrese la latitud:");
-      const lon = prompt("Ingrese la longitud:");
-      if (lat && lon) {
-        L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map).bindPopup(`📍 ${lat}, ${lon}`).openPopup();
-        map.setView([parseFloat(lat), parseFloat(lon)], 15);
-      }
-    };
-
-    document.getElementById('btnUbicacion').onclick = () => {
-      map.locate({ setView: true, maxZoom: 16 });
-      map.once('locationfound', (e) => {
-        L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup();
-      });
-      map.once('locationerror', () => alert("No se pudo obtener tu ubicación"));
     };
   </script>
 </body>
