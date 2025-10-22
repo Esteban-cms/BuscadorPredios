@@ -1,338 +1,133 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Briceño en Mapas</title>
+<script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map').setView([7.132, -75.569], 10);
 
-  <!-- Turf.js para cálculo de área -->
-  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 20,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
-  <style>
-    html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; }
-    #map { height: 100%; width: 100%; }
+  let capaPredios, capaAmenaza, capaRiesgo, capaProteccion, resaltado;
+  let listaMatriculas = [];
 
-    /* Panel lateral */
-    #sidebar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 310px;
-      height: 100%;
-      background: #111;
-      color: white;
-      padding: 15px;
-      box-shadow: 3px 0 10px rgba(0,0,0,0.4);
-      overflow-y: auto;
-      z-index: 1000;
-    }
-
-    #sidebar h2 {
-      text-align: center;
-      font-size: 20px;
-      margin-top: 10px;
-      color: #00e676;
-    }
-
-    #sidebar img {
-      display: block;
-      margin: 10px auto;
-      width: 90px;
-      border-radius: 8px;
-    }
-
-    .layer-option {
-      background: #222;
-      border-radius: 8px;
-      padding: 10px;
-      margin: 8px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    .layer-option:hover { background: #333; }
-
-    .layer-option span { font-size: 14px; }
-
-    .layer-option input {
-      width: 18px;
-      height: 18px;
-      accent-color: #00e676;
-    }
-
-    #search-container {
-      background: #222;
-      border-radius: 10px;
-      padding: 10px;
-      margin-top: 10px;
-      position: relative;
-    }
-
-    #search-input {
-      width: 100%;
-      padding: 8px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-    }
-
-    #autocomplete-list {
-      position: absolute;
-      background: #333;
-      border-radius: 6px;
-      z-index: 9999;
-      top: 40px;
-      left: 0;
-      right: 0;
-      max-height: 180px;
-      overflow-y: auto;
-    }
-
-    .autocomplete-item {
-      padding: 8px;
-      cursor: pointer;
-      border-bottom: 1px solid #444;
-    }
-
-    .autocomplete-item:hover { background: #555; }
-
-    #info-panel {
-      background: #1b1b1b;
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 10px;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    #map { margin-left: 310px; }
-
-    .leaflet-popup-content { font-size: 13px; }
-
-    .nota-area {
-      margin-top: 6px;
-      font-size: 12px;
-      color: #ffcc80;
-      background: rgba(255, 235, 150, 0.1);
-      padding: 5px 8px;
-      border-left: 3px solid #ffb300;
-      border-radius: 4px;
-      line-height: 1.4;
-      font-style: italic;
-    }
-
-    /* 🔘 Botones estilo IGAC */
-    .map-buttons {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 1500;
-    }
-
-    .map-btn {
-      background: #2f2f2f;
-      border: none;
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background 0.3s;
-      position: relative;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-
-    .map-btn:hover { background: #4a4a4a; }
-
-    .map-btn svg {
-      width: 22px;
-      height: 22px;
-      fill: white;
-    }
-
-    .map-btn::after {
-      content: attr(title);
-      position: absolute;
-      right: 52px;
-      top: 8px;
-      background: rgba(0,0,0,0.8);
-      color: #fff;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    }
-
-    .map-btn:hover::after {
-      opacity: 1;
-    }
-  </style>
-</head>
-<body>
-
-  <div id="sidebar">
-    <img src="escudo_briceno.jpg" alt="Escudo Briceño">
-    <h2>Briceño en Mapas</h2>
-
-    <div id="layers">
-      <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
-      <div class="layer-option"><span>🌋 Condición de Amenaza Rural</span><input type="checkbox" id="chkAmenaza"></div>
-      <div class="layer-option"><span>⚠️ Condición de Riesgo Rural</span><input type="checkbox" id="chkRiesgo"></div>
-      <div class="layer-option"><span>🛡️ Protección y Gestión del Riesgo</span><input type="checkbox" id="chkProteccion"></div>
-    </div>
-
-    <div id="search-container">
-      <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
-      <div id="autocomplete-list"></div>
-      <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">
-        🔍 Buscar
-      </button>
-    </div>
-
-    <div id="info-panel">
-      <b>ℹ️ Información del predio</b>
-      <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
-    </div>
-  </div>
-
-  <div id="map"></div>
-
-  <!-- 🔘 Botones flotantes con SVG -->
-  <div class="map-buttons">
-    <button class="map-btn" id="btnHome" title="Volver al inicio">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
-    </button>
-    <button class="map-btn" id="btnLocate" title="Activar mi ubicación">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8h-2a10 10 0 1 0 10-10z"/><circle cx="12" cy="12" r="2.5"/></svg>
-    </button>
-    <button class="map-btn" id="btnCoords" title="Ir a coordenadas">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2l4 8h-8l4-8zm0 20l-4-8h8l-4 8zm10-10l-8 4v-8l8 4zm-20 0l8-4v8l-8-4z"/></svg>
-    </button>
-  </div>
-
-  <script>
-    const map = L.map('map').setView([7.132, -75.569], 10);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    let capaPredios, capaAmenaza, capaRiesgo, capaProteccion, resaltado;
-    let listaMatriculas = [];
-
-    fetch('Predios_Usos_Unidos_4326.geojson').then(r => r.json()).then(data => {
-      capaPredios = L.geoJSON(data, {
-        style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
-        onEachFeature: (f, l) => {
-          if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
-          l.on('click', () => mostrarInfo(f));
-        }
-      }).addTo(map);
-      map.fitBounds(capaPredios.getBounds());
-    });
-
-    fetch('Condicion_Amenaza_Rura.geojson').then(r => r.json()).then(data => {
-      capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    fetch('CondicionRiesgoRural.geojson').then(r => r.json()).then(data => {
-      capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    fetch('Proteccion_GestionRiesgo.geojson').then(r => r.json()).then(data => {
-      capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }});
-    });
-
-    function mostrarInfo(feature) {
-      const info = document.getElementById('info-content');
-      let areaHa = 'Sin calcular';
-
-      try {
-        const reproj = turf.toMercator(feature); // reproyección métrica
-        const areaM2 = turf.area(reproj);
-        areaHa = (areaM2 / 10000).toFixed(2) + ' ha';
-      } catch (e) {
-        console.error('Error calculando área:', e);
+  fetch('Predios_Usos_Unidos_4326.geojson').then(r => r.json()).then(data => {
+    capaPredios = L.geoJSON(data, {
+      style: { color: '#00e676', weight: 1, fillOpacity: 0.3 },
+      onEachFeature: (f, l) => {
+        if (f.properties.PK_PREDIOS) listaMatriculas.push(f.properties.PK_PREDIOS);
+        l.on('click', () => mostrarInfo(f));
       }
+    }).addTo(map);
+    map.fitBounds(capaPredios.getBounds());
+  });
 
-      info.innerHTML = `
-        <p><b>📄 Matrícula:</b> ${feature.properties.PK_PREDIOS || 'Sin dato'}</p>
-        <p><b>🏞️ Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
-        <p><b>🚜 Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
-        <p><b>📏 Área:</b> ${areaHa}</p>
-        <div class="nota-area">⚠️ <b>Áreas de referencia.</b> Estos valores son aproximados; para conocer el área real del predio, diríjase a la autoridad competente o tramite un replanteo catastral.</div>
-      `;
+  fetch('Condicion_Amenaza_Rura.geojson').then(r => r.json()).then(data => {
+    capaAmenaza = L.geoJSON(data, { style: { color: '#FF9800', weight: 1, fillOpacity: 0.2 }});
+  });
 
-      if (resaltado) map.removeLayer(resaltado);
-      resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 }}).addTo(map);
-      map.fitBounds(resaltado.getBounds());
+  fetch('CondicionRiesgoRural.geojson').then(r => r.json()).then(data => {
+    capaRiesgo = L.geoJSON(data, { style: { color: '#f44336', weight: 1, fillOpacity: 0.2 }});
+  });
+
+  fetch('Proteccion_GestionRiesgo.geojson').then(r => r.json()).then(data => {
+    capaProteccion = L.geoJSON(data, { style: { color: '#2196F3', weight: 1, fillOpacity: 0.2 }});
+  });
+
+  // 📏 Calcular área (referencial usando proyección métrica)
+  function mostrarInfo(feature) {
+    const info = document.getElementById('info-content');
+    let areaHa = 'Sin calcular';
+
+    try {
+      const f4326 = feature;
+      const f3857 = turf.toMercator(f4326, { mutate: false }); // reproyección a metros
+      const areaM2 = turf.area(f3857);
+      areaHa = (areaM2 / 10000).toFixed(2) + ' ha';
+    } catch (e) {
+      console.error('Error al calcular área:', e);
     }
 
-    const input = document.getElementById('search-input');
-    const list = document.getElementById('autocomplete-list');
+    info.innerHTML = `
+      <p><b>📄 Matrícula:</b> ${feature.properties.PK_PREDIOS || 'Sin dato'}</p>
+      <p><b>🏞️ Vereda:</b> ${feature.properties.NOMBRE_VER || 'Sin dato'}</p>
+      <p><b>🚜 Uso:</b> ${feature.properties.Usos || 'Sin dato'}</p>
+      <p><b>📏 Área (referencial):</b> ${areaHa}</p>
+      <p style="color:#ffeb3b; font-size:12px; margin-top:4px;">
+        ⚠️ Áreas de referencia. Para conocer el área real del predio, diríjase a la autoridad competente o tramite un replanteo catastral.
+      </p>
+    `;
 
-    input.addEventListener('input', function() {
-      const val = this.value.toLowerCase();
-      list.innerHTML = '';
-      if (!val) return;
-      const coincidencias = listaMatriculas.filter(m => m.toLowerCase().includes(val)).slice(0, 10);
-      coincidencias.forEach(m => {
-        const item = document.createElement('div');
-        item.classList.add('autocomplete-item');
-        item.textContent = m;
-        item.onclick = () => { input.value = m; list.innerHTML = ''; buscarPredio(m); };
-        list.appendChild(item);
-      });
+    if (resaltado) map.removeLayer(resaltado);
+    resaltado = L.geoJSON(feature, {
+      style: { color: 'yellow', weight: 3, fillOpacity: 0.1 }
+    }).addTo(map);
+    map.fitBounds(resaltado.getBounds());
+  }
+
+  const input = document.getElementById('search-input');
+  const list = document.getElementById('autocomplete-list');
+
+  input.addEventListener('input', function() {
+    const val = this.value.toLowerCase();
+    list.innerHTML = '';
+    if (!val) return;
+    const coincidencias = listaMatriculas.filter(m => m.toLowerCase().includes(val)).slice(0, 10);
+    coincidencias.forEach(m => {
+      const item = document.createElement('div');
+      item.classList.add('autocomplete-item');
+      item.textContent = m;
+      item.onclick = () => {
+        input.value = m;
+        list.innerHTML = '';
+        buscarPredio(m);
+      };
+      list.appendChild(item);
     });
+  });
 
-    function buscarPredio(texto) {
-      if (!texto || !capaPredios) return alert('Escribe una matrícula válida.');
-      let encontrado = false;
-      capaPredios.eachLayer(layer => {
-        if (layer.feature.properties.PK_PREDIOS == texto) {
-          mostrarInfo(layer.feature);
-          encontrado = true;
-        }
-      });
-      if (!encontrado) alert('No se encontró ese predio.');
+  function buscarPredio(texto) {
+    if (!texto || !capaPredios) return alert('Escribe una matrícula válida.');
+    let encontrado = false;
+    capaPredios.eachLayer(layer => {
+      if (layer.feature.properties.PK_PREDIOS == texto) {
+        mostrarInfo(layer.feature);
+        encontrado = true;
+      }
+    });
+    if (!encontrado) alert('No se encontró ese predio.');
+  }
+
+  document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
+
+  document.getElementById('chkPredios').onchange = e => e.target.checked ? map.addLayer(capaPredios) : map.removeLayer(capaPredios);
+  document.getElementById('chkAmenaza').onchange = e => e.target.checked ? map.addLayer(capaAmenaza) : map.removeLayer(capaAmenaza);
+  document.getElementById('chkRiesgo').onchange = e => e.target.checked ? map.addLayer(capaRiesgo) : map.removeLayer(capaRiesgo);
+  document.getElementById('chkProteccion').onchange = e => e.target.checked ? map.addLayer(capaProteccion) : map.removeLayer(capaProteccion);
+
+  // 🏠 Volver al inicio
+  document.getElementById('btnHome').onclick = () => {
+    map.setView([7.132, -75.569], 12);
+  };
+
+  // 📡 Activar geolocalización
+  document.getElementById('btnLocate').onclick = () => {
+    map.locate({ setView: true, maxZoom: 17 });
+  };
+
+  map.on('locationfound', e => {
+    L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup();
+  });
+
+  // 🎯 Ir a coordenadas
+  document.getElementById('btnCoords').onclick = () => {
+    const lat = prompt("Ingrese latitud:");
+    const lon = prompt("Ingrese longitud:");
+    if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
+      map.setView([parseFloat(lat), parseFloat(lon)], 16);
+      L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map).bindPopup(`Coordenadas:<br>${lat}, ${lon}`).openPopup();
+    } else {
+      alert("Coordenadas no válidas.");
     }
-
-    document.getElementById('btnBuscar').onclick = () => buscarPredio(input.value.trim());
-
-    document.getElementById('chkPredios').onchange = e => e.target.checked ? map.addLayer(capaPredios) : map.removeLayer(capaPredios);
-    document.getElementById('chkAmenaza').onchange = e => e.target.checked ? map.addLayer(capaAmenaza) : map.removeLayer(capaAmenaza);
-    document.getElementById('chkRiesgo').onchange = e => e.target.checked ? map.addLayer(capaRiesgo) : map.removeLayer(capaRiesgo);
-    document.getElementById('chkProteccion').onchange = e => e.target.checked ? map.addLayer(capaProteccion) : map.removeLayer(capaProteccion);
-
-    document.getElementById('btnHome').onclick = () => map.setView([7.132, -75.569], 12);
-    document.getElementById('btnLocate').onclick = () => map.locate({ setView: true, maxZoom: 17 });
-    map.on('locationfound', e => L.marker(e.latlng).addTo(map).bindPopup("📍 Estás aquí").openPopup());
-
-    document.getElementById('btnCoords').onclick = () => {
-      const lat = prompt("Ingrese latitud:");
-      const lon = prompt("Ingrese longitud:");
-      if (lat && lon && !isNaN(lat) && !isNaN(lon)) {
-        map.setView([parseFloat(lat), parseFloat(lon)], 16);
-        L.marker([parseFloat(lat), parseFloat(lon)]).addTo(map)
-          .bindPopup(`Coordenadas:<br>${lat}, ${lon}`).openPopup();
-      } else alert("Coordenadas no válidas.");
-    };
-  </script>
-</body>
-</html>
+  };
+</script>
