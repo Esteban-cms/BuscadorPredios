@@ -7,35 +7,40 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
 <style>
-html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
-#map { height:100%; width:100%; margin-left:310px; }
-#sidebar { position:absolute; top:0; left:0; width:310px; height:100%; background:#111; color:white; padding:15px; box-shadow:3px 0 10px rgba(0,0,0,0.4); overflow-y:auto; z-index:1000;}
-#sidebar h2 { text-align:center; color:#00e676; margin-bottom:10px;}
-#sidebar img { display:block; margin:10px auto; width:90px; border-radius:8px;}
-details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
-.layer-option { display:flex; justify-content:space-between; align-items:center; margin:5px 0; padding:6px; background:#1b1b1b; border-radius:6px; }
-.layer-option input { accent-color:#00e676; }
-#search-container { background:#222; border-radius:10px; padding:10px; margin-top:10px; position:relative; }
-#search-input { width:100%; padding:8px; border-radius:6px; border:none; outline:none; }
-#autocomplete-list { position:absolute; background:#333; border-radius:6px; z-index:9999; top:40px; left:0; right:0; max-height:180px; overflow-y:auto; }
-.autocomplete-item { padding:8px; cursor:pointer; border-bottom:1px solid #444; }
-.autocomplete-item:hover { background:#555; }
-#info-panel { background:#1b1b1b; margin-top:15px; padding:10px; border-radius:10px; font-size:13px; line-height:1.5; }
-.map-buttons { position:absolute; top:15px; right:15px; display:flex; flex-direction:column; gap:10px; z-index:1500; }
-.map-btn { background:#2f2f2f; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.5); position:relative;}
-.map-btn:hover { background:#4a4a4a; }
-.map-btn svg { width:22px; height:22px; fill:white; }
-.map-btn::after { content:attr(title); position:absolute; right:52px; top:8px; background:rgba(0,0,0,0.8); color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; opacity:0; transition:opacity 0.3s; }
-.map-btn:hover::after { opacity:1; }
-#coordModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:center; z-index:2000; }
-#coordBox { background:#1c1c1c; padding:20px; border-radius:12px; width:300px; box-shadow:0 0 15px rgba(0,0,0,0.5); }
-#coordBox h3 { text-align:center; margin-bottom:15px; color:#00e676; }
-#coordBox input { width:100%; padding:8px; margin:5px 0; border:none; border-radius:6px; outline:none; }
-#coordBox button { width:100%; padding:8px; background:#00e676; border:none; border-radius:6px; cursor:pointer; margin-top:10px; }
-.vereda-label { background-color: rgba(0,0,0,0.6) !important; color:#fff !important; font-weight:bold; padding:2px 5px; border-radius:4px; font-size:12px; text-align:center; }
+  html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
+  #map { height:100%; width:100%; margin-left:310px; }
+  #sidebar { position:absolute; top:0; left:0; width:310px; height:100%; background:#111; color:white;
+    padding:15px; box-shadow:3px 0 10px rgba(0,0,0,0.4); overflow-y:auto; z-index:1000;}
+  #sidebar h2 { text-align:center; color:#00e676; margin-bottom:10px;}
+  #sidebar img { display:block; margin:10px auto; width:90px; border-radius:8px;}
+  details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
+  .layer-option { display:flex; justify-content:space-between; align-items:center; margin:5px 0; padding:6px; background:#1b1b1b; border-radius:6px; }
+  .layer-option input { accent-color:#00e676; }
+  #search-container { background:#222; border-radius:10px; padding:10px; margin-top:10px; position:relative; }
+  #search-input { width:100%; padding:8px; border-radius:6px; border:none; outline:none; }
+  #autocomplete-list { position:absolute; background:#333; border-radius:6px; z-index:9999; top:40px; left:0; right:0; max-height:180px; overflow-y:auto; }
+  .autocomplete-item { padding:8px; cursor:pointer; border-bottom:1px solid #444; }
+  .autocomplete-item:hover { background:#555; }
+  #info-panel { background:#1b1b1b; margin-top:15px; padding:10px; border-radius:10px; font-size:13px; line-height:1.5; }
+  .btn-descargar {width:100%;margin-top:8px;padding:8px;background:#00e676;border:none;border-radius:6px;color:#000;font-weight:bold;cursor:pointer;}
+  .btn-descargar:hover {background:#00c96a;}
+  .map-buttons { position:absolute; top:15px; right:15px; display:flex; flex-direction:column; gap:10px; z-index:1500; }
+  .map-btn { background:#2f2f2f; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.5); position:relative;}
+  .map-btn:hover { background:#4a4a4a; }
+  .map-btn svg { width:22px; height:22px; fill:white; }
+  .map-btn::after { content:attr(title); position:absolute; right:52px; top:8px; background:rgba(0,0,0,0.8); color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; opacity:0; transition:opacity 0.3s; }
+  .map-btn:hover::after { opacity:1; }
+  #coordModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:center; z-index:2000; }
+  #coordBox { background:#1c1c1c; padding:20px; border-radius:12px; width:300px; box-shadow:0 0 15px rgba(0,0,0,0.5); }
+  #coordBox h3 { text-align:center; margin-bottom:15px; color:#00e676; }
+  #coordBox input { width:100%; padding:8px; margin:5px 0; border:none; border-radius:6px; outline:none; }
+  #coordBox button { width:100%; padding:8px; background:#00e676; border:none; border-radius:6px; cursor:pointer; margin-top:10px; }
+  .vereda-label { background-color: rgba(0,0,0,0.6) !important; color:#fff !important; font-weight:bold; padding:2px 5px; border-radius:4px; font-size:12px; text-align:center; }
 </style>
 </head>
+
 <body>
 <div id="sidebar">
   <img src="escudo_briceno.jpg" alt="Escudo Briceño">
@@ -61,6 +66,7 @@ details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
   <div id="info-panel">
     <b>ℹ️ Información</b>
     <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
+    <button id="btnDescargarInfo" class="btn-descargar">📄 Descargar Info del Predio</button>
   </div>
 </div>
 
@@ -87,62 +93,151 @@ details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
   </div>
 </div>
 
-<!-- 🔹 Botón para generar reporte PDF -->
-<button id="btnReportePredio" 
-  style="position:absolute; bottom:15px; right:15px; z-index:2000; background:#00e676; color:#000; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:bold;">
-  📄 Generar Reporte del Predio
-</button>
-
-<!-- Librerías -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
+// === MAPA BASE Y CAPAS ===
 const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
 const map = L.map('map').setView([7.132, -75.569], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
 
-// Resto del código intacto ...
+let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
 
-document.getElementById("btnReportePredio").addEventListener("click", async ()=>{
+function mostrarPredio(f){
+  const p = f.properties;
+  const geom = f.geometry;
+
+  function calcularPorcentaje(capa){
+    if(!capa) return 0;
+    let areaTotal = turf.area(f);
+    let areaInter = 0;
+    capa.eachLayer(l=>{
+      try {
+        const inter = turf.intersect(turf.feature(geom), l.feature);
+        if(inter) areaInter += turf.area(inter);
+      } catch(e){}
+    });
+    return Math.round((areaInter / areaTotal) * 100);
+  }
+
+  function semaforoHTML(pct){
+    let color;
+    if(pct <= 25) color="#4CAF50";
+    else if(pct <= 50) color="#FFEB3B";
+    else if(pct <= 75) color="#FF9800";
+    else color="#F44336";
+    return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
+              <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
+            </div>
+            <span style="font-size:12px;">${pct}%</span>`;
+  }
+
+  const pctAmenaza = calcularPorcentaje(capaAmenaza);
+  const pctRiesgo  = calcularPorcentaje(capaRiesgo);
+  const pctProtec  = calcularPorcentaje(capaProteccion);
+
+  document.getElementById('info-content').innerHTML=`
+    <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
+    <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
+    <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
+    <p><b>Área:</b> ${p["Area ha"]?.toLocaleString() || 'Sin dato'} ha</p>
+    <p><b>% Amenaza:</b> ${pctAmenaza}%</p>
+    <p><b>% Riesgo:</b> ${pctRiesgo}%</p>
+    <p><b>% Protección:</b> ${pctProtec}%</p>
+  `;
+
+  if(resaltado) map.removeLayer(resaltado);
+  resaltado=L.geoJSON(f,{style:{color:'yellow',weight:3,fillOpacity:0.1}}).addTo(map);
+  map.fitBounds(resaltado.getBounds());
+}
+
+function cargarCapa(nombre, archivo, estilo, visible=false){
+  fetch(baseUrl+archivo).then(r=>r.json()).then(data=>{
+    capas[nombre]=L.geoJSON(data,{
+      style:estilo,
+      onEachFeature:(f,l)=>{
+        if(nombre==="Predios") l.on('click',()=>mostrarPredio(f));
+        if(nombre==="Veredas" && f.properties.NOMBRE_VER){
+          l.bindTooltip(f.properties.NOMBRE_VER,{permanent:true,direction:'center',className:'vereda-label'});
+        }
+      }
+    });
+    if(visible) capas[nombre].addTo(map);
+    if(nombre==="Predios") listaPredios=data.features.map(f=>f.properties.PK_PREDIOS);
+  });
+}
+
+cargarCapa("Predios","Predios_Usos_Agrupados.geojson",{color:"#00e676",weight:1,fillOpacity:0.3},true);
+cargarCapa("Amenaza","Condicion_Amenaza_Rura.geojson",{color:"#FF9800",weight:1,fillOpacity:0.2});
+cargarCapa("Riesgo","CondicionRiesgoRural.geojson",{color:"#f44336",weight:1,fillOpacity:0.2});
+cargarCapa("Proteccion","Proteccion_GestionRiesgo.geojson",{color:"#2196F3",weight:1,fillOpacity:0.2});
+cargarCapa("Construcciones","ConstruccionesRurales.geojson",{color:"#8BC34A",weight:1,fillOpacity:0.3});
+cargarCapa("Drenaje","Drenaje_Doble.geojson",{color:"#03A9F4",weight:1,fillOpacity:0.3});
+cargarCapa("Veredas","Veredas.geojson",{color:"#9C27B0",weight:1,fillOpacity:0.2},false);
+
+Promise.all([
+  fetch(baseUrl+"Condicion_Amenaza_Rura.geojson").then(r=>r.json()),
+  fetch(baseUrl+"CondicionRiesgoRural.geojson").then(r=>r.json()),
+  fetch(baseUrl+"Proteccion_GestionRiesgo.geojson").then(r=>r.json())
+]).then(([a,r,p])=>{capaAmenaza=L.geoJSON(a); capaRiesgo=L.geoJSON(r); capaProteccion=L.geoJSON(p);});
+
+function toggleLayer(chkId,layerName){document.getElementById(chkId).addEventListener("change",()=>{if(capas[layerName]){document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);}});}
+toggleLayer("chkPredios","Predios"); toggleLayer("chkAmenaza","Amenaza"); toggleLayer("chkRiesgo","Riesgo"); toggleLayer("chkProteccion","Proteccion");
+toggleLayer("chkConstrucciones","Construcciones"); toggleLayer("chkDrenaje","Drenaje"); toggleLayer("chkVeredas","Veredas");
+
+const input=document.getElementById("search-input"); const list=document.getElementById("autocomplete-list");
+input.addEventListener("input",()=>{const val=input.value.toLowerCase(); list.innerHTML=""; if(!val) return; listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p; item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);}; list.appendChild(item);});});
+document.getElementById("btnBuscar").onclick=()=>{const p=input.value; const layer=capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p); layer?mostrarPredio(layer.feature):alert("No encontrado");};
+
+document.getElementById("btnHome").onclick=()=>map.setView([7.132,-75.569],13);
+document.getElementById('btnMostrarCapas').onclick=()=>{const panel=document.getElementById('capasTematicas'); panel.hidden=!panel.hidden;};
+
+const coordModal=document.getElementById("coordModal");
+document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
+document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
+coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
+
+// === DESCARGA PDF ===
+document.getElementById("btnDescargarInfo").onclick = async () => {
+  if (!resaltado) return alert("Selecciona un predio primero.");
+
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
-  const mapElement = document.getElementById("map");
-  const canvas = await html2canvas(mapElement, {useCORS:true, scale:2});
-  const imgData = canvas.toDataURL("image/png");
-  const pdfWidth = 190;
-  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  pdf.setFont("helvetica","bold");
+  // Título
   pdf.setFontSize(16);
-  pdf.text("Reporte del Predio", 105, 20, {align:"center"});
-  pdf.addImage(imgData, "PNG", 10, 30, pdfWidth, pdfHeight);
+  pdf.text("Reporte del Predio", 105, 15, { align: "center" });
 
-  const center = map.getCenter();
-  const fechaHora = new Date().toLocaleString("es-CO");
+  // Mapa como imagen
+  const mapCanvas = await html2canvas(document.getElementById("map"), { useCORS: true });
+  const imgData = mapCanvas.toDataURL("image/png");
+  pdf.addImage(imgData, "PNG", 10, 25, 190, 100);
 
-  pdf.autoTable({
-    startY: pdfHeight + 45,
-    head: [['Matrícula','PK_PREDIO','Vereda','Área','Uso','% Amenaza','% Riesgo','% Protección']],
-    body: [['000-12345','PK_001','El Roble','2.45 ha','Agrícola','30%','25%','15%']],
-    styles:{fontSize:9,halign:'center',valign:'middle'},
-    theme:'striped',
-    headStyles:{fillColor:[30,136,229],textColor:255}
+  // Información
+  const infoHTML = document.getElementById("info-content").innerText.split("\n").map(l => l.trim()).filter(l => l);
+  const rows = infoHTML.map(line => {
+    const [key, ...val] = line.split(":");
+    return [key, val.join(":").trim()];
   });
 
-  pdf.setFont("helvetica","italic");
-  pdf.setFontSize(9);
-  const finalY = pdf.autoTable.previous.finalY + 10;
-  pdf.text(`Coordenadas centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`, 10, finalY);
-  pdf.text(`Fecha y hora: ${fechaHora}`, 10, finalY + 6);
+  pdf.autoTable({
+    startY: 130,
+    head: [["Campo", "Valor"]],
+    body: rows,
+    theme: "grid",
+    styles: { fontSize: 10 },
+  });
 
-  pdf.setFont("helvetica","bold");
+  // Escala y coordenadas
+  const center = map.getCenter();
   pdf.setFontSize(10);
-  pdf.text("Secretaría de Planeación – Municipio de Briceño, Antioquia", 105, 285, {align:"center"});
+  pdf.text(`Coordenadas centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`, 10, pdf.lastAutoTable.finalY + 10);
+  pdf.text(`Fecha y hora: ${new Date().toLocaleString()}`, 10, pdf.lastAutoTable.finalY + 15);
 
-  pdf.save("Reporte_Predio.pdf");
-});
+  pdf.save("Predio_Briceno.pdf");
+};
 </script>
 </body>
 </html>
