@@ -96,7 +96,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, at
 
 let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
 
-// Función mejorada para mostrar predio con porcentaje y semáforo
+// Función mejorada para mostrar predio con porcentaje, semáforo y área
 function mostrarPredio(f){
   const p = f.properties;
   const geom = f.geometry;
@@ -132,6 +132,7 @@ function mostrarPredio(f){
     <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
     <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
     <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
+    <p><b>Área:</b> ${p.Area_ha?.toLocaleString() || 'Sin dato'} ha</p>
     <hr>
     <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
     <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
