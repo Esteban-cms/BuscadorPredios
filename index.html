@@ -9,8 +9,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Turf.js -->
-  <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+  <!-- Turf.js para intersecciones -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <style>
     html, body { height: 100%; margin: 0; font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; }
@@ -76,7 +76,24 @@
     }
     .map-btn:hover::after { opacity: 1; }
 
-    details[hidden] { display: none; }
+    /* Ventana modal de coordenadas */
+    #coordModal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000;
+    }
+    #coordBox {
+      background: #1c1c1c; padding: 20px; border-radius: 12px; width: 300px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+    #coordBox h3 { text-align: center; margin-bottom: 15px; color: #00e676; }
+    #coordBox input {
+      width: 100%; padding: 8px; margin: 5px 0;
+      border: none; border-radius: 6px; outline: none;
+    }
+    #coordBox button {
+      width: 100%; padding: 8px; background: #00e676;
+      border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -100,7 +117,6 @@
       <div class="layer-option"><span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas"></div>
     </details>
 
-    <!-- Buscador -->
     <div id="search-container">
       <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
       <div id="autocomplete-list"></div>
@@ -111,13 +127,12 @@
 
     <div id="info-panel">
       <b>ℹ️ Información</b>
-      <div id="info-content">Selecciona un elemento o búscalo por matrícula.</div>
+      <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
     </div>
   </div>
 
   <div id="map"></div>
 
-  <!-- Botones flotantes -->
   <div class="map-buttons">
     <button class="map-btn" id="btnHome" title="Volver al inicio">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
@@ -132,20 +147,43 @@
     </button>
   </div>
 
+  <!-- Modal para ingresar coordenadas -->
+  <div id="coordModal">
+    <div id="coordBox">
+      <h3>Ir a coordenadas</h3>
+      <input type="text" id="latitud" placeholder="Ej: 7.132" />
+      <input type="text" id="longitud" placeholder="Ej: -75.569" />
+      <button id="btnIrCoord">Ir</button>
+    </div>
+  </div>
+
   <script>
     const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
     const map = L.map('map').setView([7.132, -75.569], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20 }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '© OpenStreetMap' }).addTo(map);
 
     let capas = {}, resaltado, listaPredios = [];
+    let capaAmenaza, capaRiesgo, capaProteccion;
 
     function mostrarPredio(feature) {
       const p = feature.properties;
-      document.getElementById('info-content').innerHTML = `
+      let interAmenaza = "No", interRiesgo = "No", interProteccion = "No";
+      const geomPredio = feature.geometry;
+
+      if (capaAmenaza) capaAmenaza.eachLayer(l => { if (turf.intersect(geomPredio, l.feature.geometry)) interAmenaza = "Sí"; });
+      if (capaRiesgo) capaRiesgo.eachLayer(l => { if (turf.intersect(geomPredio, l.feature.geometry)) interRiesgo = "Sí"; });
+      if (capaProteccion) capaProteccion.eachLayer(l => { if (turf.intersect(geomPredio, l.feature.geometry)) interProteccion = "Sí"; });
+
+      const info = document.getElementById('info-content');
+      info.innerHTML = `
         <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
         <p><b>Vereda:</b> ${p.NOMBRE_VER || 'Sin nombre'}</p>
         <p><b>Uso:</b> ${p.Usos || 'Sin dato'}</p>
-        <p><b>Área (ha):</b> ${p["Area ha"] || 'Sin dato'}</p>`;
+        <hr>
+        <p><b>🌋 Amenaza:</b> ${interAmenaza}</p>
+        <p><b>⚠️ Riesgo:</b> ${interRiesgo}</p>
+        <p><b>🛡️ Protección:</b> ${interProteccion}</p>
+      `;
       if (resaltado) map.removeLayer(resaltado);
       resaltado = L.geoJSON(feature, { style: { color: 'yellow', weight: 3, fillOpacity: 0.1 } }).addTo(map);
       map.fitBounds(resaltado.getBounds());
@@ -157,7 +195,9 @@
         .then(data => {
           capas[nombre] = L.geoJSON(data, {
             style: estilo,
-            onEachFeature: (f, l) => { if (nombre === "Predios") l.on('click', () => mostrarPredio(f)); }
+            onEachFeature: (f, l) => {
+              if (nombre === "Predios") l.on('click', () => mostrarPredio(f));
+            }
           });
           if (visible) capas[nombre].addTo(map);
           if (nombre === "Predios") listaPredios = data.features.map(f => f.properties.PK_PREDIOS);
@@ -172,23 +212,16 @@
     cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
     cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
 
-    // 🔘 Control de capas
-    const checkboxes = {
-      "Predios": "chkPredios", "Amenaza": "chkAmenaza", "Riesgo": "chkRiesgo",
-      "Proteccion": "chkProteccion", "Construcciones": "chkConstrucciones",
-      "Drenaje": "chkDrenaje", "Veredas": "chkVeredas"
-    };
+    Promise.all([
+      fetch(baseUrl + "Condicion_Amenaza_Rura.geojson").then(r => r.json()),
+      fetch(baseUrl + "CondicionRiesgoRural.geojson").then(r => r.json()),
+      fetch(baseUrl + "Proteccion_GestionRiesgo.geojson").then(r => r.json())
+    ]).then(([a, r, p]) => {
+      capaAmenaza = L.geoJSON(a);
+      capaRiesgo = L.geoJSON(r);
+      capaProteccion = L.geoJSON(p);
+    });
 
-    for (const [nombre, id] of Object.entries(checkboxes)) {
-      document.getElementById(id).addEventListener("change", e => {
-        if (capas[nombre]) {
-          if (e.target.checked) capas[nombre].addTo(map);
-          else map.removeLayer(capas[nombre]);
-        }
-      });
-    }
-
-    // 🔎 Buscador
     const input = document.getElementById("search-input");
     const list = document.getElementById("autocomplete-list");
 
@@ -200,13 +233,16 @@
         const item = document.createElement("div");
         item.className = "autocomplete-item";
         item.textContent = p;
-        item.onclick = () => { input.value = p; list.innerHTML = ""; buscarPredio(p); };
+        item.onclick = () => {
+          input.value = p;
+          list.innerHTML = "";
+          buscarPredio(p);
+        };
         list.appendChild(item);
       });
     });
 
     function buscarPredio(pk) {
-      if (!pk) return alert("Escribe una matrícula válida");
       fetch(baseUrl + "Predios_Usos_Agrupados.geojson")
         .then(r => r.json())
         .then(data => {
@@ -217,36 +253,25 @@
     }
 
     document.getElementById("btnBuscar").onclick = () => buscarPredio(input.value);
-
-    // 🏠 Botón inicio
     document.getElementById("btnHome").onclick = () => map.setView([7.132, -75.569], 13);
 
-    // 📍 Botón ubicación
-    document.getElementById("btnUbicacion").onclick = () => {
-      if (!navigator.geolocation) return alert("Tu navegador no soporta geolocalización.");
-      navigator.geolocation.getCurrentPosition(pos => {
-        const latlng = [pos.coords.latitude, pos.coords.longitude];
-        if (window.userMarker) map.removeLayer(window.userMarker);
-        window.userMarker = L.marker(latlng).addTo(map).bindPopup("Tu ubicación").openPopup();
-        map.setView(latlng, 16);
-      }, () => alert("No se pudo obtener la ubicación."));
-    };
-
-    // 📌 Botón coordenadas
-    document.getElementById("btnCoordenadas").onclick = () => {
-      const coords = prompt("Introduce coordenadas (lat, lon):");
-      if (!coords) return;
-      const [lat, lon] = coords.split(",").map(Number);
-      if (isNaN(lat) || isNaN(lon)) return alert("Coordenadas inválidas");
-      L.marker([lat, lon]).addTo(map).bindPopup(`Coordenadas: ${lat}, ${lon}`).openPopup();
-      map.setView([lat, lon], 16);
-    };
-
-    // Mostrar / ocultar panel de capas
     document.getElementById('btnMostrarCapas').onclick = () => {
       const panel = document.getElementById('capasTematicas');
       panel.hidden = !panel.hidden;
     };
+
+    // Modal coordenadas
+    const coordModal = document.getElementById("coordModal");
+    document.getElementById("btnCoordenadas").onclick = () => coordModal.style.display = "flex";
+    document.getElementById("btnIrCoord").onclick = () => {
+      const lat = parseFloat(document.getElementById("latitud").value);
+      const lon = parseFloat(document.getElementById("longitud").value);
+      if (isNaN(lat) || isNaN(lon)) return alert("Coordenadas inválidas");
+      coordModal.style.display = "none";
+      map.setView([lat, lon], 17);
+      L.marker([lat, lon]).addTo(map);
+    };
+    coordModal.onclick = e => { if (e.target === coordModal) coordModal.style.display = "none"; };
   </script>
 </body>
 </html>
