@@ -193,5 +193,142 @@ document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="
 document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
 </script>
+  <!-- Librerías necesarias -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.1.0/docx.min.js"></script>
+
+<!-- Botones nuevos -->
+<div style="text-align:center; margin-top:8px;">
+  <button id="btnPDF" style="background:#007bff;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;">📄 Descargar informe PDF</button>
+  <button id="btnWord" style="background:#28a745;color:white;border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin:4px;">📝 Descargar informe Word</button>
+</div>
+
+<script>
+// =============== CONFIGURACIÓN ===============
+const autor = "Secretaría de Planeación – Alcaldía de Briceño, Antioquia";
+const sistemaCoords = "EPSG:4326";
+const nombreArchivo = "Info_del_Predio";
+const leyendaEjemplo = [
+  "Predios rurales",
+  "Usos del suelo",
+  "Riesgos y amenazas",
+  "Suelos en protección"
+];
+
+// =============== CAPTURA DE MAPA ===============
+async function capturarMapa() {
+  const mapa = document.getElementById('map');
+  const canvas = await html2canvas(mapa, {useCORS: true});
+  return canvas.toDataURL("image/png");
+}
+
+// =============== DATOS DEL PREDIO (placeholder) ===============
+function obtenerDatosPredio() {
+  const infoDiv = document.getElementById("info") || document.querySelector(".info");
+  const texto = infoDiv ? infoDiv.innerText.trim() : "Sin información del predio.";
+  return texto;
+}
+
+// =============== CREAR PDF ===============
+async function generarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const imgData = await capturarMapa();
+  const datos = obtenerDatosPredio();
+  const fecha = new Date().toLocaleString();
+
+  // Título
+  doc.setFontSize(14);
+  doc.text("INFORME DEL PREDIO", 105, 15, { align: "center" });
+  doc.setFontSize(11);
+  doc.text(autor, 105, 22, { align: "center" });
+
+  // Imagen del mapa
+  doc.addImage(imgData, "PNG", 20, 30, 170, 90);
+
+  // Leyenda
+  doc.setFontSize(11);
+  doc.text("Leyenda de capas activas:", 20, 130);
+  let y = 136;
+  leyendaEjemplo.forEach(l => {
+    doc.text(`• ${l}`, 25, y);
+    y += 6;
+  });
+
+  // Datos del predio
+  doc.text("Información del predio:", 20, y + 4);
+  doc.setFontSize(10);
+  doc.text(datos, 25, y + 10, { maxWidth: 160 });
+
+  // Pie de página
+  doc.setFontSize(9);
+  doc.text(`Fecha y hora: ${fecha}`, 20, 280);
+  doc.text(`Sistema de coordenadas: ${sistemaCoords}`, 20, 285);
+  doc.text(`Escala aproximada: 1:5,000`, 20, 290);
+
+  doc.save(`${nombreArchivo}.pdf`);
+}
+
+// =============== CREAR WORD ===============
+async function generarWord() {
+  const datos = obtenerDatosPredio();
+  const fecha = new Date().toLocaleString();
+  const imgData = await capturarMapa();
+
+  const doc = new docx.Document({
+    sections: [{
+      properties: {},
+      children: [
+        new docx.Paragraph({
+          text: "INFORME DEL PREDIO",
+          heading: docx.HeadingLevel.HEADING_1,
+          alignment: docx.AlignmentType.CENTER
+        }),
+        new docx.Paragraph({
+          text: autor,
+          alignment: docx.AlignmentType.CENTER
+        }),
+        new docx.Paragraph({ text: " " }),
+        new docx.Paragraph({ text: "Mapa del predio:" }),
+        new docx.Paragraph({
+          children: [
+            new docx.ImageRun({
+              data: await fetch(imgData).then(r => r.blob()),
+              transformation: { width: 500, height: 280 }
+            })
+          ]
+        }),
+        new docx.Paragraph({ text: " " }),
+        new docx.Paragraph({ text: "Leyenda de capas activas:" }),
+        ...leyendaEjemplo.map(l => new docx.Paragraph({ text: "• " + l })),
+        new docx.Paragraph({ text: " " }),
+        new docx.Paragraph({ text: "Información del predio:" }),
+        new docx.Paragraph({ text: datos }),
+        new docx.Paragraph({ text: " " }),
+        new docx.Paragraph({ text: `Fecha y hora: ${fecha}` }),
+        new docx.Paragraph({ text: `Sistema de coordenadas: ${sistemaCoords}` }),
+        new docx.Paragraph({ text: `Escala aproximada: 1:5,000` })
+      ]
+    }]
+  });
+
+  docx.Packer.toBlob(doc).then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${nombreArchivo}.docx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  });
+}
+
+// =============== EVENTOS ===============
+document.getElementById("btnPDF").addEventListener("click", generarPDF);
+document.getElementById("btnWord").addEventListener("click", generarWord);
+</script>
+
 </body>
 </html>
+
