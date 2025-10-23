@@ -132,7 +132,7 @@ function mostrarPredio(f){
     <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
     <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
     <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
-    <p><b>Área:</b> ${p.Area_ha?.toLocaleString() || 'Sin dato'} ha</p>
+   <p><b>Área:</b> ${p["Area ha"]?.toLocaleString() || 'Sin dato'} ha</p>
     <hr>
     <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
     <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
@@ -205,3 +205,4 @@ coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none"
 </script>
 </body>
 </html>
+
