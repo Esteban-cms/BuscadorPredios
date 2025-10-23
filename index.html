@@ -98,7 +98,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-// === MAPA BASE Y CAPAS ===
+// ================= MAPA BASE Y CAPAS =================
 const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
 const map = L.map('map').setView([7.132, -75.569], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
@@ -122,18 +122,6 @@ function mostrarPredio(f){
     return Math.round((areaInter / areaTotal) * 100);
   }
 
-  function semaforoHTML(pct){
-    let color;
-    if(pct <= 25) color="#4CAF50";
-    else if(pct <= 50) color="#FFEB3B";
-    else if(pct <= 75) color="#FF9800";
-    else color="#F44336";
-    return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
-              <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
-            </div>
-            <span style="font-size:12px;">${pct}%</span>`;
-  }
-
   const pctAmenaza = calcularPorcentaje(capaAmenaza);
   const pctRiesgo  = calcularPorcentaje(capaRiesgo);
   const pctProtec  = calcularPorcentaje(capaProteccion);
@@ -153,6 +141,7 @@ function mostrarPredio(f){
   map.fitBounds(resaltado.getBounds());
 }
 
+// ================= CARGAR CAPAS =================
 function cargarCapa(nombre, archivo, estilo, visible=false){
   fetch(baseUrl+archivo).then(r=>r.json()).then(data=>{
     capas[nombre]=L.geoJSON(data,{
@@ -183,14 +172,17 @@ Promise.all([
   fetch(baseUrl+"Proteccion_GestionRiesgo.geojson").then(r=>r.json())
 ]).then(([a,r,p])=>{capaAmenaza=L.geoJSON(a); capaRiesgo=L.geoJSON(r); capaProteccion=L.geoJSON(p);});
 
+// ================= TOGGLE CAPAS =================
 function toggleLayer(chkId,layerName){document.getElementById(chkId).addEventListener("change",()=>{if(capas[layerName]){document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);}});}
 toggleLayer("chkPredios","Predios"); toggleLayer("chkAmenaza","Amenaza"); toggleLayer("chkRiesgo","Riesgo"); toggleLayer("chkProteccion","Proteccion");
 toggleLayer("chkConstrucciones","Construcciones"); toggleLayer("chkDrenaje","Drenaje"); toggleLayer("chkVeredas","Veredas");
 
+// ================= BÚSQUEDA =================
 const input=document.getElementById("search-input"); const list=document.getElementById("autocomplete-list");
 input.addEventListener("input",()=>{const val=input.value.toLowerCase(); list.innerHTML=""; if(!val) return; listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p; item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);}; list.appendChild(item);});});
 document.getElementById("btnBuscar").onclick=()=>{const p=input.value; const layer=capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p); layer?mostrarPredio(layer.feature):alert("No encontrado");};
 
+// ================= BOTONES =================
 document.getElementById("btnHome").onclick=()=>map.setView([7.132,-75.569],13);
 document.getElementById('btnMostrarCapas').onclick=()=>{const panel=document.getElementById('capasTematicas'); panel.hidden=!panel.hidden;};
 
@@ -199,23 +191,46 @@ document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="
 document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
 
-// === DESCARGA PDF ===
+// ================= DESCARGA PDF CON MINIATURA =================
 document.getElementById("btnDescargarInfo").onclick = async () => {
   if (!resaltado) return alert("Selecciona un predio primero.");
 
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  // Título
+  // TÍTULO
   pdf.setFontSize(16);
   pdf.text("Reporte del Predio", 105, 15, { align: "center" });
 
-  // Mapa como imagen
+  // MAPA GENERAL
+  const bounds = resaltado.getBounds();
+  map.fitBounds(bounds, { padding: [50, 50] });
+  await new Promise(r => setTimeout(r, 700));
   const mapCanvas = await html2canvas(document.getElementById("map"), { useCORS: true });
   const imgData = mapCanvas.toDataURL("image/png");
   pdf.addImage(imgData, "PNG", 10, 25, 190, 100);
 
-  // Información
+  // MAPA DETALLE SOLO DEL PREDIO
+  const tempDiv = document.createElement("div");
+  tempDiv.style.width = "400px";
+  tempDiv.style.height = "300px";
+  tempDiv.style.position = "absolute";
+  tempDiv.style.top = "-10000px";
+  document.body.appendChild(tempDiv);
+
+  const tempMap = L.map(tempDiv, { zoomControl: false, attributionControl: false });
+  const tempLayer = L.geoJSON(resaltado.toGeoJSON(), { style: { color: "red", weight: 3, fillOpacity: 0.05 } }).addTo(tempMap);
+  tempMap.fitBounds(tempLayer.getBounds(), { padding: [10, 10] });
+
+  await new Promise(r => setTimeout(r, 600));
+  const detailCanvas = await html2canvas(tempDiv, { useCORS: true, backgroundColor: "#ffffff" });
+  const detailImg = detailCanvas.toDataURL("image/png");
+  pdf.addImage(detailImg, "PNG", 125, 30, 70, 50);
+
+  tempMap.remove();
+  document.body.removeChild(tempDiv);
+
+  // TABLA
   const infoHTML = document.getElementById("info-content").innerText.split("\n").map(l => l.trim()).filter(l => l);
   const rows = infoHTML.map(line => {
     const [key, ...val] = line.split(":");
@@ -230,8 +245,8 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
     styles: { fontSize: 10 },
   });
 
-  // Escala y coordenadas
-  const center = map.getCenter();
+  // COORDENADAS Y FECHA
+  const center = resaltado.getBounds().getCenter();
   pdf.setFontSize(10);
   pdf.text(`Coordenadas centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`, 10, pdf.lastAutoTable.finalY + 10);
   pdf.text(`Fecha y hora: ${new Date().toLocaleString()}`, 10, pdf.lastAutoTable.finalY + 15);
