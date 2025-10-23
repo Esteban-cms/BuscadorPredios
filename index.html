@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Briceño en Mapas</title>
+<title>Briceño en Mapas - Informe</title>
 
-<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/leaflet-graticule@0.1.3/dist/Leaflet.Graticule.min.js"></script>
 
 <style>
 html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
@@ -38,6 +38,9 @@ details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
 #coordBox input { width:100%; padding:8px; margin:5px 0; border:none; border-radius:6px; outline:none; }
 #coordBox button { width:100%; padding:8px; background:#00e676; border:none; border-radius:6px; cursor:pointer; margin-top:10px; }
 .vereda-label { background-color: rgba(0,0,0,0.6) !important; color:#fff !important; font-weight:bold; padding:2px 5px; border-radius:4px; font-size:12px; text-align:center; }
+#mapLegend, #mapInfoBox { position:absolute; background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:8px; font-size:12px; z-index:2000; }
+#mapLegend { bottom:15px; left:15px; }
+#mapInfoBox { top:15px; left:15px; }
 </style>
 </head>
 <body>
@@ -67,20 +70,21 @@ details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
     <b>ℹ️ Información</b>
     <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
   </div>
+
+  <button id="btnExportPredioCSV" style="width:100%;padding:8px;margin-top:8px;background:#2196F3;border:none;border-radius:6px;cursor:pointer;">💾 Exportar predio CSV</button>
+  <button id="btnExportHistCSV" style="width:100%;padding:8px;margin-top:5px;background:#9C27B0;border:none;border-radius:6px;cursor:pointer;">💾 Exportar historial CSV</button>
+  <button id="btnExportMapaPNG" style="width:100%;padding:8px;margin-top:5px;background:#FF9800;border:none;border-radius:6px;cursor:pointer;">🖼️ Exportar mapa PNG</button>
 </div>
 
 <div id="map"></div>
-
-<!-- Leyenda y cuadro info -->
-<div id="mapLegend" style="position:absolute; bottom:15px; left:15px; background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:8px; font-size:12px; z-index:2000;">
+<div id="mapLegend">
   <b>📌 Leyenda</b>
   <div><span style="background:#00e676;width:12px;height:12px;display:inline-block;margin-right:4px;"></span>Predios</div>
   <div><span style="background:#FF9800;width:12px;height:12px;display:inline-block;margin-right:4px;"></span>Amenaza</div>
   <div><span style="background:#f44336;width:12px;height:12px;display:inline-block;margin-right:4px;"></span>Riesgo</div>
   <div><span style="background:#2196F3;width:12px;height:12px;display:inline-block;margin-right:4px;"></span>Protección</div>
 </div>
-
-<div id="mapInfoBox" style="position:absolute; top:15px; right:15px; background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:8px; font-size:12px; z-index:2000;">
+<div id="mapInfoBox">
   <b>📄 Información del predio</b>
   <div id="infoMapContent">Selecciona un predio</div>
 </div>
@@ -94,36 +98,26 @@ details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
   </div>
 </div>
 
-<div class="map-buttons">
-  <button class="map-btn" id="btnHome" title="Volver al inicio">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
-  </button>
-  <button class="map-btn" id="btnCoordenadas" title="Ir a coordenadas">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
-  </button>
-  <button class="map-btn" id="btnUbicacion" title="Mi ubicación">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0-6a2 2 0 0 1 2 2v2a8 8 0 0 1 6 6h2a2 2 0 0 1 0 4h-2a8 8 0 0 1-6 6v2a2 2 0 0 1-4 0v-2a8 8 0 0 1-6-6h-2a2 2 0 0 1 0-4h2a8 8 0 0 1 6-6V4a2 2 0 0 1 2-2z"/></svg>
-  </button>
-</div>
-
 <script>
+// ======= Configuración básica =======
 const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
 const map = L.map('map').setView([7.132, -75.569], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
-
-// Escala y grilla
 L.control.scale({position:'bottomright'}).addTo(map);
-const graticule = L.latlngGraticule({ showLabel: true, color: '#888', weight: 0.5, interval: 0.01 }).addTo(map); // requires leaflet-latlng-graticule plugin
 
+// Grilla de paralelos y meridianos con etiquetas
+const graticule = L.graticule({interval:0.005, style:{color:'#888',weight:0.5}, showLabel:true}).addTo(map);
+
+// ======= Variables globales =======
 let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
 let historialAcumulado = [];
 
-// Función mostrar predio
+// ======= Función para mostrar predio y guardar en historial =======
 function mostrarPredio(f){
   const p = f.properties;
   const geom = f.geometry;
-
-  // Guardar en historial masivo
+  
+  // Guardar historial
   if(!historialAcumulado.some(h=>h.PK_PREDIOS===p.PK_PREDIOS)){
     historialAcumulado.push({
       PK_PREDIOS: p.PK_PREDIOS,
@@ -133,6 +127,7 @@ function mostrarPredio(f){
     });
   }
 
+  // Semáforo de riesgo
   function calcularPorcentaje(capa){
     if(!capa) return 0;
     let areaTotal = turf.area(f);
@@ -143,50 +138,42 @@ function mostrarPredio(f){
     });
     return Math.round((areaInter / areaTotal) * 100);
   }
-
   function semaforoHTML(pct){
     let color = pct<=25 ? "#4CAF50" : pct<=50 ? "#FFEB3B" : pct<=75 ? "#FF9800" : "#F44336";
     return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
               <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
             </div><span style="font-size:12px;">${pct}%</span>`;
   }
-
   const pctAmenaza = calcularPorcentaje(capaAmenaza);
   const pctRiesgo  = calcularPorcentaje(capaRiesgo);
   const pctProtec  = calcularPorcentaje(capaProteccion);
 
-  document.getElementById('info-content').innerHTML=`
-    <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
-    <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
-    <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
-    <p><b>Área:</b> ${p["Area ha"]?.toLocaleString() || 'Sin dato'} ha</p>
-    <hr>
-    <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
-    <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
-    <p><b>🛡️ Protección:</b></p> ${semaforoHTML(pctProtec)}
-  `;
+  const infoHTML = `<p><b>Predio:</b> ${p.PK_PREDIOS}</p>
+  <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
+  <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
+  <p><b>Área:</b> ${p["Area ha"]?.toLocaleString() || 'Sin dato'} ha</p>
+  <hr>
+  <p><b>🌋 Amenaza:</b></p>${semaforoHTML(pctAmenaza)}
+  <p><b>⚠️ Riesgo:</b></p>${semaforoHTML(pctRiesgo)}
+  <p><b>🛡️ Protección:</b></p>${semaforoHTML(pctProtec)}
+  <p><b>Coordenadas:</b> ${turf.center(geom).geometry.coordinates[1].toFixed(6)}, ${turf.center(geom).geometry.coordinates[0].toFixed(6)}</p>
+  <p><b>Sistema:</b> WGS84</p>
+  <p><b>Municipio:</b> Briceño, Antioquia</p>`;
 
-  const centroide = turf.centroid(geom).geometry.coordinates;
-  document.getElementById("infoMapContent").innerHTML = `
-    Municipio: Briceño, Antioquia<br>
-    Vereda: ${p.NOMBRE_VER||'Sin nombre'}<br>
-    Matrícula: ${p.PK_PREDIOS}<br>
-    Sistema de coordenadas: WGS84 (EPSG:4326)<br>
-    Autor: Municipio de Briceño<br>
-    Coordenadas (centroide): ${centroide[1].toFixed(6)}, ${centroide[0].toFixed(6)}
-  `;
+  document.getElementById('info-content').innerHTML = infoHTML;
+  document.getElementById('infoMapContent').innerHTML = infoHTML;
 
   if(resaltado) map.removeLayer(resaltado);
-  resaltado=L.geoJSON(f,{style:{color:'yellow',weight:3,fillOpacity:0.1}}).addTo(map);
+  resaltado = L.geoJSON(f, {style:{color:'yellow',weight:3,fillOpacity:0.1}}).addTo(map);
   map.fitBounds(resaltado.getBounds());
 }
 
-// Función cargar capas
+// ======= Función para cargar capas =======
 function cargarCapa(nombre, archivo, estilo, visible=false){
   fetch(baseUrl+archivo).then(r=>r.json()).then(data=>{
-    capas[nombre]=L.geoJSON(data,{
-      style:estilo,
-      onEachFeature:(f,l)=>{
+    capas[nombre] = L.geoJSON(data,{
+      style: estilo,
+      onEachFeature: (f,l)=>{
         if(nombre==="Predios") l.on('click',()=>mostrarPredio(f));
         if(nombre==="Veredas" && f.properties.NOMBRE_VER){
           l.bindTooltip(f.properties.NOMBRE_VER,{permanent:true,direction:'center',className:'vereda-label'});
@@ -194,11 +181,11 @@ function cargarCapa(nombre, archivo, estilo, visible=false){
       }
     });
     if(visible) capas[nombre].addTo(map);
-    if(nombre==="Predios") listaPredios=data.features.map(f=>f.properties.PK_PREDIOS);
+    if(nombre==="Predios") listaPredios = data.features.map(f=>f.properties.PK_PREDIOS);
   });
 }
 
-// Cargar capas
+// ======= Cargar todas las capas =======
 cargarCapa("Predios","Predios_Usos_Agrupados.geojson",{color:"#00e676",weight:1,fillOpacity:0.3},true);
 cargarCapa("Amenaza","Condicion_Amenaza_Rura.geojson",{color:"#FF9800",weight:1,fillOpacity:0.2});
 cargarCapa("Riesgo","CondicionRiesgoRural.geojson",{color:"#f44336",weight:1,fillOpacity:0.2});
@@ -207,30 +194,39 @@ cargarCapa("Construcciones","ConstruccionesRurales.geojson",{color:"#8BC34A",wei
 cargarCapa("Drenaje","Drenaje_Doble.geojson",{color:"#03A9F4",weight:1,fillOpacity:0.3});
 cargarCapa("Veredas","Veredas.geojson",{color:"#9C27B0",weight:1,fillOpacity:0.2},false);
 
+// ======= Intersección =======
 Promise.all([
   fetch(baseUrl+"Condicion_Amenaza_Rura.geojson").then(r=>r.json()),
   fetch(baseUrl+"CondicionRiesgoRural.geojson").then(r=>r.json()),
   fetch(baseUrl+"Proteccion_GestionRiesgo.geojson").then(r=>r.json())
 ]).then(([a,r,p])=>{capaAmenaza=L.geoJSON(a); capaRiesgo=L.geoJSON(r); capaProteccion=L.geoJSON(p);});
 
-// Toggle capas
+// ======= Toggle capas =======
 function toggleLayer(chkId,layerName){
-  document.getElementById(chkId).addEventListener("change",()=>{if(capas[layerName]){document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);}});
+  document.getElementById(chkId).addEventListener("change",()=>{
+    if(capas[layerName]){
+      document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);
+    }
+  });
 }
 ["chkPredios","chkAmenaza","chkRiesgo","chkProteccion","chkConstrucciones","chkDrenaje","chkVeredas"].forEach(id=>toggleLayer(id,id.replace("chk","")));
 
-// Búsqueda
+// ======= Búsqueda =======
 const input=document.getElementById("search-input"); const list=document.getElementById("autocomplete-list");
-input.addEventListener("input",()=>{const val=input.value.toLowerCase(); list.innerHTML=""; if(!val) return; listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{
-  const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p; item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);}; list.appendChild(item);
-})});
+input.addEventListener("input",()=>{
+  const val=input.value.toLowerCase(); list.innerHTML="";
+  if(!val) return;
+  listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{
+    const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p;
+    item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);};
+    list.appendChild(item);
+  });
+});
 document.getElementById("btnBuscar").onclick=()=>{const p=input.value; const layer=capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p); layer?mostrarPredio(layer.feature):alert("No encontrado");};
 
-// Botones
+// ======= Botones básicos =======
 document.getElementById("btnHome").onclick=()=>map.setView([7.132,-75.569],13);
 document.getElementById('btnMostrarCapas').onclick=()=>{const panel=document.getElementById('capasTematicas'); panel.hidden=!panel.hidden;};
-
-// Modal coordenadas
 const coordModal=document.getElementById("coordModal");
 document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
 document.getElementById("btnIrCoord").onclick=()=>{
@@ -243,38 +239,21 @@ document.getElementById("btnIrCoord").onclick=()=>{
 };
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
 
-// Botón exportar predio actual CSV
-const btnExportCSV = document.createElement("button");
-btnExportCSV.textContent = "💾 Exportar predio CSV";
-btnExportCSV.style.cssText = "width:100%;padding:8px;margin-top:8px;background:#2196F3;border:none;border-radius:6px;cursor:pointer;";
-document.getElementById("sidebar").appendChild(btnExportCSV);
-
-btnExportCSV.onclick = ()=>{
+// ======= Exportación predio e historial =======
+document.getElementById("btnExportPredioCSV").onclick=()=>{
   if(!resaltado) return alert("Selecciona un predio primero");
   const p = resaltado.toGeoJSON().features[0].properties;
   const csv = `PK_PREDIOS,Vereda,Uso,Area_ha\n${p.PK_PREDIOS},${p.NOMBRE_VER||'Sin nombre'},${p.Usos||'Sin dato'},${p["Area ha"]?.toLocaleString()||'Sin dato'}`;
-  const link = document.createElement("a"); link.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); link.download=`predio_${p.PK_PREDIOS}.csv`; link.click();
+  const link=document.createElement("a"); link.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); link.download=`predio_${p.PK_PREDIOS}.csv`; link.click();
 };
-
-// Botón exportar historial CSV
-const btnExportHist = document.createElement("button");
-btnExportHist.textContent = "💾 Exportar historial CSV";
-btnExportHist.style.cssText = "width:100%;padding:8px;margin-top:5px;background:#9C27B0;border:none;border-radius:6px;cursor:pointer;";
-document.getElementById("sidebar").appendChild(btnExportHist);
-
-btnExportHist.onclick = ()=>{
+document.getElementById("btnExportHistCSV").onclick=()=>{
   if(historialAcumulado.length===0) return alert("No hay historial");
   const csv = "PK_PREDIOS,Vereda,Uso,Area_ha\n"+historialAcumulado.map(h=>`${h.PK_PREDIOS},${h.Vereda},${h.Uso},${h.Area_ha}`).join("\n");
-  const link = document.createElement("a"); link.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); link.download="historial_predios.csv"; link.click();
+  const link=document.createElement("a"); link.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); link.download="historial_predios.csv"; link.click();
 };
 
-// Botón exportar mapa PNG
-const btnExportMap = document.createElement("button");
-btnExportMap.textContent = "🖼️ Exportar mapa PNG";
-btnExportMap.style.cssText = "width:100%;padding:8px;margin-top:5px;background:#FF9800;border:none;border-radius:6px;cursor:pointer;";
-document.getElementById("sidebar").appendChild(btnExportMap);
-
-btnExportMap.onclick = ()=>{
+// ======= Exportar mapa con leyenda, info y grilla =======
+document.getElementById("btnExportMapaPNG").onclick=()=>{
   html2canvas(document.getElementById("map"), {useCORS:true, allowTaint:true}).then(canvas=>{
     const ctx = canvas.getContext("2d");
     html2canvas(document.getElementById("mapLegend")).then(legCanvas=>{
