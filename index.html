@@ -96,22 +96,48 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, at
 
 let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
 
+// Función mejorada para mostrar predio con porcentaje y semáforo
 function mostrarPredio(f){
-  const p=f.properties;
-  let ia="No", ir="No", ip="No";
-  const geom=f.geometry;
-  if(capaAmenaza) capaAmenaza.eachLayer(l=>{if(turf.intersect(geom,l.feature.geometry)) ia="Sí";});
-  if(capaRiesgo) capaRiesgo.eachLayer(l=>{if(turf.intersect(geom,l.feature.geometry)) ir="Sí";});
-  if(capaProteccion) capaProteccion.eachLayer(l=>{if(turf.intersect(geom,l.feature.geometry)) ip="Sí";});
+  const p = f.properties;
+  const geom = f.geometry;
+
+  function calcularPorcentaje(capa){
+    if(!capa) return 0;
+    let areaTotal = turf.area(f);
+    let areaInter = 0;
+    capa.eachLayer(l=>{
+      const inter = turf.intersect(geom, l.feature.geometry);
+      if(inter) areaInter += turf.area(inter);
+    });
+    return Math.round((areaInter / areaTotal) * 100);
+  }
+
+  function semaforoHTML(pct){
+    let color;
+    if(pct <= 25) color="#4CAF50";       // Verde
+    else if(pct <= 50) color="#FFEB3B";  // Amarillo
+    else if(pct <= 75) color="#FF9800";  // Naranja
+    else color="#F44336";                 // Rojo
+    return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
+              <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
+            </div>
+            <span style="font-size:12px;">${pct}%</span>`;
+  }
+
+  const pctAmenaza = calcularPorcentaje(capaAmenaza);
+  const pctRiesgo  = calcularPorcentaje(capaRiesgo);
+  const pctProtec  = calcularPorcentaje(capaProteccion);
+
   document.getElementById('info-content').innerHTML=`
     <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
     <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
     <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
     <hr>
-    <p><b>🌋 Amenaza:</b> ${ia}</p>
-    <p><b>⚠️ Riesgo:</b> ${ir}</p>
-    <p><b>🛡️ Protección:</b> ${ip}</p>
+    <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
+    <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
+    <p><b>🛡️ Protección:</b></p> ${semaforoHTML(pctProtec)}
   `;
+
   if(resaltado) map.removeLayer(resaltado);
   resaltado=L.geoJSON(f,{style:{color:'yellow',weight:3,fillOpacity:0.1}}).addTo(map);
   map.fitBounds(resaltado.getBounds());
