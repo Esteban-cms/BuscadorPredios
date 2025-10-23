@@ -96,6 +96,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, at
 
 let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
 
+// Función mejorada para mostrar predio con porcentaje y semáforo + Área
 function mostrarPredio(f){
   const p = f.properties;
   const geom = f.geometry;
@@ -113,16 +114,14 @@ function mostrarPredio(f){
 
   function semaforoHTML(pct){
     let color;
-    if(pct <= 25) color="#4CAF50";       
-    else if(pct <= 50) color="#FFEB3B";  
-    else if(pct <= 75) color="#FF9800";  
-    else color="#F44336";                 
-    return `
-      <div style="background:#333; border-radius:6px; height:14px; width:100%; margin:2px 0;">
-        <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
-      </div>
-      <div style="font-size:12px; text-align:right;">${pct}%</div>
-    `;
+    if(pct <= 25) color="#4CAF50";       // Verde
+    else if(pct <= 50) color="#FFEB3B";  // Amarillo
+    else if(pct <= 75) color="#FF9800";  // Naranja
+    else color="#F44336";                 // Rojo
+    return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
+              <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
+            </div>
+            <span style="font-size:12px;">${pct}%</span>`;
   }
 
   const pctAmenaza = calcularPorcentaje(capaAmenaza);
@@ -134,7 +133,7 @@ function mostrarPredio(f){
     <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
     <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
     <p><b>Área:</b> ${p.Area_ha?.toLocaleString() || 'Sin dato'} ha</p>
-    <hr style="border-color:#444;">
+    <hr>
     <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
     <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
     <p><b>🛡️ Protección:</b></p> ${semaforoHTML(pctProtec)}
@@ -145,8 +144,64 @@ function mostrarPredio(f){
   map.fitBounds(resaltado.getBounds());
 }
 
-// Resto del código de carga de capas, toggles y búsqueda permanece igual
-// ...
+// Cargar capas y etiquetas
+function cargarCapa(nombre, archivo, estilo, visible=false){
+  fetch(baseUrl+archivo).then(r=>r.json()).then(data=>{
+    capas[nombre]=L.geoJSON(data,{
+      style:estilo,
+      onEachFeature:(f,l)=>{
+        if(nombre==="Predios") l.on('click',()=>mostrarPredio(f));
+        if(nombre==="Veredas" && f.properties.NOMBRE_VER){
+          l.bindTooltip(f.properties.NOMBRE_VER,{permanent:true,direction:'center',className:'vereda-label'});
+        }
+      }
+    });
+    if(visible) capas[nombre].addTo(map);
+    if(nombre==="Predios") listaPredios=data.features.map(f=>f.properties.PK_PREDIOS);
+  });
+}
+
+// Cargar todas las capas
+cargarCapa("Predios","Predios_Usos_Agrupados.geojson",{color:"#00e676",weight:1,fillOpacity:0.3},true);
+cargarCapa("Amenaza","Condicion_Amenaza_Rura.geojson",{color:"#FF9800",weight:1,fillOpacity:0.2});
+cargarCapa("Riesgo","CondicionRiesgoRural.geojson",{color:"#f44336",weight:1,fillOpacity:0.2});
+cargarCapa("Proteccion","Proteccion_GestionRiesgo.geojson",{color:"#2196F3",weight:1,fillOpacity:0.2});
+cargarCapa("Construcciones","ConstruccionesRurales.geojson",{color:"#8BC34A",weight:1,fillOpacity:0.3});
+cargarCapa("Drenaje","Drenaje_Doble.geojson",{color:"#03A9F4",weight:1,fillOpacity:0.3});
+cargarCapa("Veredas","Veredas.geojson",{color:"#9C27B0",weight:1,fillOpacity:0.2},false);
+
+// Cargar capas de intersección
+Promise.all([
+  fetch(baseUrl+"Condicion_Amenaza_Rura.geojson").then(r=>r.json()),
+  fetch(baseUrl+"CondicionRiesgoRural.geojson").then(r=>r.json()),
+  fetch(baseUrl+"Proteccion_GestionRiesgo.geojson").then(r=>r.json())
+]).then(([a,r,p])=>{capaAmenaza=L.geoJSON(a); capaRiesgo=L.geoJSON(r); capaProteccion=L.geoJSON(p);});
+
+// Toggle de capas
+function toggleLayer(chkId,layerName){document.getElementById(chkId).addEventListener("change",()=>{if(capas[layerName]){document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);}});}
+toggleLayer("chkPredios","Predios"); toggleLayer("chkAmenaza","Amenaza"); toggleLayer("chkRiesgo","Riesgo"); toggleLayer("chkProteccion","Proteccion");
+toggleLayer("chkConstrucciones","Construcciones"); toggleLayer("chkDrenaje","Drenaje"); toggleLayer("chkVeredas","Veredas");
+
+// Búsqueda
+const input=document.getElementById("search-input"); const list=document.getElementById("autocomplete-list");
+input.addEventListener("input",()=>{const val=input.value.toLowerCase(); list.innerHTML=""; if(!val) return; listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p; item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);}; list.appendChild(item);});});
+document.getElementById("btnBuscar").onclick=()=>{const p=input.value; const layer=capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p); layer?mostrarPredio(layer.feature):alert("No encontrado");};
+
+document.getElementById("btnHome").onclick=()=>map.setView([7.132,-75.569],13);
+document.getElementById('btnMostrarCapas').onclick=()=>{const panel=document.getElementById('capasTematicas'); panel.hidden=!panel.hidden;};
+
+// Modal coordenadas
+const coordModal=document.getElementById("coordModal");
+document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
+document.getElementById("btnIrCoord").onclick=()=>{
+  const lat=parseFloat(document.getElementById("latitud").value);
+  const lon=parseFloat(document.getElementById("longitud").value);
+  if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas");
+  coordModal.style.display="none";
+  map.setView([lat,lon],17);
+  L.marker([lat,lon]).addTo(map);
+};
+coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
 </script>
 </body>
 </html>
