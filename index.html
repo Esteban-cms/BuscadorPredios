@@ -1,103 +1,197 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Info del Predio - Briceño en Mapas</title>
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; color: #222; }
-    #map { height: 70vh; width: 100%; border-bottom: 2px solid #999; }
-    #info {
-      padding: 15px 20px;
-      background: white;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    }
-    h2 { text-align: center; color: #006400; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-    th, td { border: 1px solid #aaa; padding: 6px; text-align: left; }
-    #footer { font-size: 11px; margin-top: 15px; color: #555; }
-    #btnPDF { background: #00b050; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; }
-    #btnPDF:hover { background: #00873a; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Briceño en Mapas</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<style>
+  html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
+  #map { height:100%; width:100%; margin-left:310px; }
+  #sidebar { position:absolute; top:0; left:0; width:310px; height:100%; background:#111; color:white;
+    padding:15px; box-shadow:3px 0 10px rgba(0,0,0,0.4); overflow-y:auto; z-index:1000;}
+  #sidebar h2 { text-align:center; color:#00e676; margin-bottom:10px;}
+  #sidebar img { display:block; margin:10px auto; width:90px; border-radius:8px;}
+  details { background:#222; border-radius:10px; padding:10px; margin-top:10px; }
+  .layer-option { display:flex; justify-content:space-between; align-items:center; margin:5px 0; padding:6px; background:#1b1b1b; border-radius:6px; }
+  .layer-option input { accent-color:#00e676; }
+  #search-container { background:#222; border-radius:10px; padding:10px; margin-top:10px; position:relative; }
+  #search-input { width:100%; padding:8px; border-radius:6px; border:none; outline:none; }
+  #autocomplete-list { position:absolute; background:#333; border-radius:6px; z-index:9999; top:40px; left:0; right:0; max-height:180px; overflow-y:auto; }
+  .autocomplete-item { padding:8px; cursor:pointer; border-bottom:1px solid #444; }
+  .autocomplete-item:hover { background:#555; }
+  #info-panel { background:#1b1b1b; margin-top:15px; padding:10px; border-radius:10px; font-size:13px; line-height:1.5; }
+  .map-buttons { position:absolute; top:15px; right:15px; display:flex; flex-direction:column; gap:10px; z-index:1500; }
+  .map-btn { background:#2f2f2f; border:none; border-radius:50%; width:44px; height:44px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background 0.3s; box-shadow:0 2px 6px rgba(0,0,0,0.5); position:relative;}
+  .map-btn:hover { background:#4a4a4a; }
+  .map-btn svg { width:22px; height:22px; fill:white; }
+  .map-btn::after { content:attr(title); position:absolute; right:52px; top:8px; background:rgba(0,0,0,0.8); color:#fff; padding:4px 8px; border-radius:6px; font-size:12px; white-space:nowrap; opacity:0; transition:opacity 0.3s; }
+  .map-btn:hover::after { opacity:1; }
+  #coordModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:center; z-index:2000; }
+  #coordBox { background:#1c1c1c; padding:20px; border-radius:12px; width:300px; box-shadow:0 0 15px rgba(0,0,0,0.5); }
+  #coordBox h3 { text-align:center; margin-bottom:15px; color:#00e676; }
+  #coordBox input { width:100%; padding:8px; margin:5px 0; border:none; border-radius:6px; outline:none; }
+  #coordBox button { width:100%; padding:8px; background:#00e676; border:none; border-radius:6px; cursor:pointer; margin-top:10px; }
+  .vereda-label { background-color: rgba(0,0,0,0.6) !important; color:#fff !important; font-weight:bold; padding:2px 5px; border-radius:4px; font-size:12px; text-align:center; }
+</style>
 </head>
 <body>
 
-  <h2>Información del Predio</h2>
-  <div id="map"></div>
+<div id="sidebar">
+  <img src="escudo_briceno.jpg" alt="Escudo Briceño">
+  <h2>Briceño en Mapas</h2>
+  <button id="btnMostrarCapas" style="width:100%;padding:8px;background:#00e676;border:none;border-radius:8px;cursor:pointer;margin-bottom:8px;">🗺️ Mostrar Capas</button>
+  <details id="capasTematicas" hidden>
+    <div class="layer-option"><span>🟩 Predios Rurales</span><input type="checkbox" id="chkPredios" checked></div>
+    <div class="layer-option"><span>🌋 Amenaza</span><input type="checkbox" id="chkAmenaza"></div>
+    <div class="layer-option"><span>⚠️ Riesgo</span><input type="checkbox" id="chkRiesgo"></div>
+    <div class="layer-option"><span>🛡️ Protección</span><input type="checkbox" id="chkProteccion"></div>
+    <hr style="border:0.5px solid #333;">
+    <div class="layer-option"><span>🏠 Construcciones</span><input type="checkbox" id="chkConstrucciones"></div>
+    <div class="layer-option"><span>💧 Drenaje Doble</span><input type="checkbox" id="chkDrenaje"></div>
+    <div class="layer-option"><span>🗺️ Veredas</span><input type="checkbox" id="chkVeredas"></div>
+  </details>
 
-  <div id="info">
-    <div id="atributos"></div>
-    <button id="btnPDF">Descargar PDF</button>
-
-    <div id="footer">
-      <b>Autor:</b> Municipio de Briceño - Secretaría de Planeación<br>
-      <b>Sistema de coordenadas:</b> WGS84 (EPSG:4326)<br>
-      <b>Fecha:</b> <span id="fecha"></span>
-    </div>
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
+    <div id="autocomplete-list"></div>
+    <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">🔍 Buscar</button>
   </div>
 
-  <script>
-    const { jsPDF } = window.jspdf;
-    document.getElementById("fecha").textContent = new Date().toLocaleString();
+  <div id="info-panel">
+    <b>ℹ️ Información</b>
+    <div id="info-content">Selecciona un predio o búscalo por matrícula.</div>
+  </div>
+</div>
 
-    // Crear mapa base
-    const map = L.map("map").setView([7.132, -75.569], 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(map);
+<div id="map"></div>
 
-    // Cargar todas las capas igual que el visor
-    const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
-    const capas = {
-      "Predios": "Predios_Usos_Agrupados.geojson",
-      "Amenaza": "Condicion_Amenaza_Rura.geojson",
-      "Riesgo": "CondicionRiesgoRural.geojson",
-      "Protección": "Proteccion_GestionRiesgo.geojson",
-      "Construcciones": "ConstruccionesRurales.geojson",
-      "Drenaje": "Drenaje_Doble.geojson",
-      "Veredas": "Veredas.geojson"
-    };
+<div class="map-buttons">
+  <button class="map-btn" id="btnHome" title="Volver al inicio">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3l9 9h-3v9h-12v-9h-3z"/></svg>
+  </button>
+  <button class="map-btn" id="btnCoordenadas" title="Ir a coordenadas">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.86-3.14-7-7-7zM12 11.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/></svg>
+  </button>
+  <button class="map-btn" id="btnUbicacion" title="Mi ubicación">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8m0-6a2 2 0 0 1 2 2v2a8 8 0 0 1 6 6h2a2 2 0 0 1 0 4h-2a8 8 0 0 1-6 6v2a2 2 0 0 1-4 0v-2a8 8 0 0 1-6-6h-2a2 2 0 0 1 0-4h2a8 8 0 0 1 6-6V4a2 2 0 0 1 2-2z"/></svg>
+  </button>
+</div>
 
-    Object.entries(capas).forEach(([nombre, archivo]) => {
-      fetch(baseUrl + archivo)
-        .then(r => r.json())
-        .then(data => {
-          L.geoJSON(data, {
-            style: { color: "#"+Math.floor(Math.random()*16777215).toString(16), weight: 1, fillOpacity: 0.2 }
-          }).addTo(map);
-        });
+<div id="coordModal">
+  <div id="coordBox">
+    <h3>Ir a coordenadas</h3>
+    <input type="text" id="latitud" placeholder="Ej: 7.132" />
+    <input type="text" id="longitud" placeholder="Ej: -75.569" />
+    <button id="btnIrCoord">Ir</button>
+  </div>
+</div>
+
+<script>
+const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
+const map = L.map('map').setView([7.132, -75.569], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
+
+let capas={}, resaltado, listaPredios=[], capaAmenaza, capaRiesgo, capaProteccion;
+
+// ✅ Ajuste en calcularPorcentaje()
+function mostrarPredio(f){
+  const p = f.properties;
+  const geom = f.geometry;
+
+  function calcularPorcentaje(capa){
+    if(!capa) return 0;
+    let areaTotal = turf.area(f);
+    let areaInter = 0;
+    capa.eachLayer(l=>{
+      try {
+        const inter = turf.intersect(turf.feature(geom), l.feature);
+        if(inter) areaInter += turf.area(inter);
+      } catch(e){}
     });
+    return Math.round((areaInter / areaTotal) * 100);
+  }
 
-    // Recuperar la info del predio desde el visor
-    const infoPredio = localStorage.getItem("info_predio") || "No se seleccionó ningún predio.";
-    const atributosDiv = document.getElementById("atributos");
-    atributosDiv.innerHTML = `<pre>${infoPredio}</pre>`;
+  function semaforoHTML(pct){
+    let color;
+    if(pct <= 25) color="#4CAF50";
+    else if(pct <= 50) color="#FFEB3B";
+    else if(pct <= 75) color="#FF9800";
+    else color="#F44336";
+    return `<div style="background:#333; border-radius:6px; height:12px; width:100%; margin:2px 0;">
+              <div style="width:${pct}%; background:${color}; height:100%; border-radius:6px;"></div>
+            </div>
+            <span style="font-size:12px;">${pct}%</span>`;
+  }
 
-    // Generar PDF
-    document.getElementById("btnPDF").addEventListener("click", async () => {
-      const pdf = new jsPDF("landscape", "mm", "a4");
-      const mapCanvas = await html2canvas(document.getElementById("map"), { useCORS: true, scale: 2 });
-      const imgData = mapCanvas.toDataURL("image/png");
+  const pctAmenaza = calcularPorcentaje(capaAmenaza);
+  const pctRiesgo  = calcularPorcentaje(capaRiesgo);
+  const pctProtec  = calcularPorcentaje(capaProteccion);
 
-      pdf.addImage(imgData, "PNG", 10, 20, 270, 150);
-      pdf.setFontSize(14);
-      pdf.text("Municipio de Briceño - Secretaría de Planeación", 15, 15);
-      pdf.setFontSize(10);
-      pdf.text("Sistema de Coordenadas: WGS84 - EPSG:4326", 15, 182);
-      pdf.text("Generado: " + new Date().toLocaleString(), 15, 188);
+  document.getElementById('info-content').innerHTML=`
+    <p><b>Predio:</b> ${p.PK_PREDIOS}</p>
+    <p><b>Vereda:</b> ${p.NOMBRE_VER||'Sin nombre'}</p>
+    <p><b>Uso:</b> ${p.Usos||'Sin dato'}</p>
+    <p><b>Área:</b> ${p["Area ha"]?.toLocaleString() || 'Sin dato'} ha</p>
+    <hr>
+    <p><b>🌋 Amenaza:</b></p> ${semaforoHTML(pctAmenaza)}
+    <p><b>⚠️ Riesgo:</b></p> ${semaforoHTML(pctRiesgo)}
+    <p><b>🛡️ Protección:</b></p> ${semaforoHTML(pctProtec)}
+  `;
 
-      const info = atributosDiv.innerText.split("\n");
-      let y = 195;
-      info.forEach(linea => { pdf.text(linea, 15, y); y += 5; });
+  if(resaltado) map.removeLayer(resaltado);
+  resaltado=L.geoJSON(f,{style:{color:'yellow',weight:3,fillOpacity:0.1}}).addTo(map);
+  map.fitBounds(resaltado.getBounds());
+}
 
-      pdf.save("Info_del_Predio.pdf");
+// --- resto del código idéntico ---
+function cargarCapa(nombre, archivo, estilo, visible=false){
+  fetch(baseUrl+archivo).then(r=>r.json()).then(data=>{
+    capas[nombre]=L.geoJSON(data,{
+      style:estilo,
+      onEachFeature:(f,l)=>{
+        if(nombre==="Predios") l.on('click',()=>mostrarPredio(f));
+        if(nombre==="Veredas" && f.properties.NOMBRE_VER){
+          l.bindTooltip(f.properties.NOMBRE_VER,{permanent:true,direction:'center',className:'vereda-label'});
+        }
+      }
     });
-  </script>
+    if(visible) capas[nombre].addTo(map);
+    if(nombre==="Predios") listaPredios=data.features.map(f=>f.properties.PK_PREDIOS);
+  });
+}
+
+cargarCapa("Predios","Predios_Usos_Agrupados.geojson",{color:"#00e676",weight:1,fillOpacity:0.3},true);
+cargarCapa("Amenaza","Condicion_Amenaza_Rura.geojson",{color:"#FF9800",weight:1,fillOpacity:0.2});
+cargarCapa("Riesgo","CondicionRiesgoRural.geojson",{color:"#f44336",weight:1,fillOpacity:0.2});
+cargarCapa("Proteccion","Proteccion_GestionRiesgo.geojson",{color:"#2196F3",weight:1,fillOpacity:0.2});
+cargarCapa("Construcciones","ConstruccionesRurales.geojson",{color:"#8BC34A",weight:1,fillOpacity:0.3});
+cargarCapa("Drenaje","Drenaje_Doble.geojson",{color:"#03A9F4",weight:1,fillOpacity:0.3});
+cargarCapa("Veredas","Veredas.geojson",{color:"#9C27B0",weight:1,fillOpacity:0.2},false);
+
+Promise.all([
+  fetch(baseUrl+"Condicion_Amenaza_Rura.geojson").then(r=>r.json()),
+  fetch(baseUrl+"CondicionRiesgoRural.geojson").then(r=>r.json()),
+  fetch(baseUrl+"Proteccion_GestionRiesgo.geojson").then(r=>r.json())
+]).then(([a,r,p])=>{capaAmenaza=L.geoJSON(a); capaRiesgo=L.geoJSON(r); capaProteccion=L.geoJSON(p);});
+
+function toggleLayer(chkId,layerName){document.getElementById(chkId).addEventListener("change",()=>{if(capas[layerName]){document.getElementById(chkId).checked?map.addLayer(capas[layerName]):map.removeLayer(capas[layerName]);}});}
+toggleLayer("chkPredios","Predios"); toggleLayer("chkAmenaza","Amenaza"); toggleLayer("chkRiesgo","Riesgo"); toggleLayer("chkProteccion","Proteccion");
+toggleLayer("chkConstrucciones","Construcciones"); toggleLayer("chkDrenaje","Drenaje"); toggleLayer("chkVeredas","Veredas");
+
+const input=document.getElementById("search-input"); const list=document.getElementById("autocomplete-list");
+input.addEventListener("input",()=>{const val=input.value.toLowerCase(); list.innerHTML=""; if(!val) return; listaPredios.filter(p=>p && p.toLowerCase().includes(val)).slice(0,10).forEach(p=>{const item=document.createElement("div"); item.className="autocomplete-item"; item.textContent=p; item.onclick=()=>{input.value=p; list.innerHTML=""; mostrarPredio(capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p).feature);}; list.appendChild(item);});});
+document.getElementById("btnBuscar").onclick=()=>{const p=input.value; const layer=capas["Predios"].getLayers().find(l=>l.feature.properties.PK_PREDIOS===p); layer?mostrarPredio(layer.feature):alert("No encontrado");};
+
+document.getElementById("btnHome").onclick=()=>map.setView([7.132,-75.569],13);
+document.getElementById('btnMostrarCapas').onclick=()=>{const panel=document.getElementById('capasTematicas'); panel.hidden=!panel.hidden;};
+
+const coordModal=document.getElementById("coordModal");
+document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
+document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
+coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
+</script>
 </body>
 </html>
