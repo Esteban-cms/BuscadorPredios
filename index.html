@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
   #map { height:100%; width:100%; margin-left:310px; }
@@ -35,6 +37,8 @@
   #coordBox input { width:100%; padding:8px; margin:5px 0; border:none; border-radius:6px; outline:none; }
   #coordBox button { width:100%; padding:8px; background:#00e676; border:none; border-radius:6px; cursor:pointer; margin-top:10px; }
   .vereda-label { background-color: rgba(0,0,0,0.6) !important; color:#fff !important; font-weight:bold; padding:2px 5px; border-radius:4px; font-size:12px; text-align:center; }
+  #btnDescargarPDF { width:100%; padding:8px; background:#007bff; border:none; border-radius:6px; cursor:pointer; margin-top:8px; color:white; }
+  #btnDescargarPDF:hover { background:#2196F3; }
 </style>
 </head>
 <body>
@@ -58,7 +62,7 @@
     <input type="text" id="search-input" placeholder="Buscar matrícula (PK_PREDIOS)">
     <div id="autocomplete-list"></div>
     <button id="btnBuscar" style="margin-top:5px;width:100%;padding:8px;background:#00e676;border:none;border-radius:6px;cursor:pointer;">🔍 Buscar</button>
-    <button id="btnDescargarPDF" style="margin-top:5px;width:100%;padding:8px;background:#007BFF;border:none;border-radius:6px;cursor:pointer;color:white;">📥 Descargar mapa del predio</button>
+    <button id="btnDescargarPDF">💾 Descargar mapa del predio</button>
   </div>
 
   <div id="info-panel">
@@ -90,21 +94,20 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <script>
-/* --- TU CÓDIGO EXISTENTE SIN CAMBIOS --- */
-... // (todo tu código igual que el que pegaste arriba)
+/* === TU CÓDIGO MADRE COMPLETO SIN CAMBIOS === */
+// (Aquí va todo tu bloque de JS original que maneja capas, búsqueda, eventos, etc.)
 
-/* === SOLO SE AÑADE ESTO AL FINAL === */
+// === BLOQUE FINAL DE DESCARGA PDF ===
 document.getElementById("btnDescargarPDF").onclick = async () => {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
   const mapCanvas = await html2canvas(document.getElementById("map"), { useCORS: true });
   const imgData = mapCanvas.toDataURL("image/png");
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = (mapCanvas.height * pdfWidth) / mapCanvas.width;
+
   pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
   pdf.setFontSize(14);
@@ -114,7 +117,6 @@ document.getElementById("btnDescargarPDF").onclick = async () => {
   pdf.text("Elaborado automáticamente desde el visor WebGIS", 10, pdfHeight + 22);
   pdf.text("Fecha: " + new Date().toLocaleString(), 10, pdfHeight + 28);
 
-  // Información del predio
   const info = document.getElementById("info-content").innerText;
   const infoLines = pdf.splitTextToSize(info, 180);
   pdf.text("Información del predio:", 10, pdfHeight + 40);
