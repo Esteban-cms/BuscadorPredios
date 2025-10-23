@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Turf.js para intersecciones -->
+  <!-- Turf.js -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
 
   <style>
@@ -76,7 +76,7 @@
     }
     .map-btn:hover::after { opacity: 1; }
 
-    /* Ventana modal de coordenadas */
+    /* Modal coordenadas */
     #coordModal {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 2000;
@@ -93,6 +93,17 @@
     #coordBox button {
       width: 100%; padding: 8px; background: #00e676;
       border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;
+    }
+
+    /* Estilo para etiquetas de veredas */
+    .vereda-label {
+      background-color: rgba(0,0,0,0.6) !important;
+      color: #fff !important;
+      font-weight: bold;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 12px;
+      text-align: center;
     }
   </style>
 </head>
@@ -147,7 +158,7 @@
     </button>
   </div>
 
-  <!-- Modal para ingresar coordenadas -->
+  <!-- Modal coordenadas -->
   <div id="coordModal">
     <div id="coordBox">
       <h3>Ir a coordenadas</h3>
@@ -197,6 +208,11 @@
             style: estilo,
             onEachFeature: (f, l) => {
               if (nombre === "Predios") l.on('click', () => mostrarPredio(f));
+              if (nombre === "Veredas") {
+                if (f.properties.NOMBRE_VER) {
+                  l.bindTooltip(f.properties.NOMBRE_VER, { permanent: true, direction: 'center', className: 'vereda-label' });
+                }
+              }
             }
           });
           if (visible) capas[nombre].addTo(map);
@@ -204,14 +220,16 @@
         });
     }
 
+    // Cargar capas
     cargarCapa("Predios", "Predios_Usos_Agrupados.geojson", { color: "#00e676", weight: 1, fillOpacity: 0.3 }, true);
     cargarCapa("Amenaza", "Condicion_Amenaza_Rura.geojson", { color: "#FF9800", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Riesgo", "CondicionRiesgoRural.geojson", { color: "#f44336", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Proteccion", "Proteccion_GestionRiesgo.geojson", { color: "#2196F3", weight: 1, fillOpacity: 0.2 });
     cargarCapa("Construcciones", "ConstruccionesRurales.geojson", { color: "#8BC34A", weight: 1, fillOpacity: 0.3 });
     cargarCapa("Drenaje", "Drenaje_Doble.geojson", { color: "#03A9F4", weight: 1, fillOpacity: 0.3 });
-    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 });
+    cargarCapa("Veredas", "Veredas.geojson", { color: "#9C27B0", weight: 1, fillOpacity: 0.2 }, false);
 
+    // Cargar capas de intersecciones
     Promise.all([
       fetch(baseUrl + "Condicion_Amenaza_Rura.geojson").then(r => r.json()),
       fetch(baseUrl + "CondicionRiesgoRural.geojson").then(r => r.json()),
@@ -222,6 +240,25 @@
       capaProteccion = L.geoJSON(p);
     });
 
+    // Toggle de capas
+    function toggleLayer(checkboxId, layerName) {
+      const chk = document.getElementById(checkboxId);
+      chk.addEventListener("change", () => {
+        if (capas[layerName]) {
+          if (chk.checked) map.addLayer(capas[layerName]);
+          else map.removeLayer(capas[layerName]);
+        }
+      });
+    }
+    toggleLayer("chkPredios", "Predios");
+    toggleLayer("chkAmenaza", "Amenaza");
+    toggleLayer("chkRiesgo", "Riesgo");
+    toggleLayer("chkProteccion", "Proteccion");
+    toggleLayer("chkConstrucciones", "Construcciones");
+    toggleLayer("chkDrenaje", "Drenaje");
+    toggleLayer("chkVeredas", "Veredas");
+
+    // Búsqueda
     const input = document.getElementById("search-input");
     const list = document.getElementById("autocomplete-list");
 
@@ -255,6 +292,7 @@
     document.getElementById("btnBuscar").onclick = () => buscarPredio(input.value);
     document.getElementById("btnHome").onclick = () => map.setView([7.132, -75.569], 13);
 
+    // Mostrar/ocultar panel de capas
     document.getElementById('btnMostrarCapas').onclick = () => {
       const panel = document.getElementById('capasTematicas');
       panel.hidden = !panel.hidden;
