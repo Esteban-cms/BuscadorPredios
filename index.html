@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Briceño en Mapas</title>
+  <title>Info del Predio - Briceño en Mapas</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -22,20 +22,22 @@
     }
 
     #map {
-      width: 100%;
+      width: 90%;
       height: 400px;
-      margin: 0 auto;
+      margin: 20px auto 10px auto;
       border: 1px solid #ccc;
+      border-radius: 10px;
       display: block;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
 
     #info {
-      width: 80%;
-      margin: 10px auto;
+      width: 90%;
+      margin: 0 auto 40px auto;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      padding: 10px 20px;
+      padding: 15px 20px;
     }
 
     table {
@@ -49,11 +51,13 @@
       color: white;
       text-align: left;
       padding: 8px;
+      font-size: 14px;
     }
 
     td {
       border: 1px solid #ccc;
       padding: 8px;
+      font-size: 13px;
     }
 
     #extra-info {
@@ -63,6 +67,10 @@
       margin-top: 8px;
       border-top: 1px solid #ccc;
       padding-top: 5px;
+      background-color: #f9f9f9;
+      border-radius: 4px;
+      padding-left: 10px;
+      padding-bottom: 5px;
     }
 
     button {
@@ -79,9 +87,18 @@
     button:hover {
       background-color: #007a52;
     }
+
+    h2 {
+      text-align: center;
+      color: #009966;
+      margin-top: 10px;
+    }
   </style>
 </head>
+
 <body>
+
+  <h2>Información del Predio</h2>
 
   <div id="map"></div>
 
@@ -117,7 +134,7 @@
       attribution: "© OpenStreetMap"
     }).addTo(map);
 
-    // Actualizar coordenadas y hora
+    // === ACTUALIZAR INFO EXTRA ===
     function actualizarInfoExtra() {
       const c = map.getCenter();
       document.getElementById("coords").textContent = `${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
@@ -126,16 +143,17 @@
     actualizarInfoExtra();
     map.on("moveend", actualizarInfoExtra);
 
-    // === DESCARGA PDF ===
+    // === DESCARGAR PDF ===
     document.getElementById("btnDescargarInfo").onclick = async () => {
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
+      // Encabezado
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(16);
-      pdf.text("Reporte del Predio", 105, 15, { align: "center" });
+      pdf.text("Informe del Predio - Secretaría de Planeación Briceño Antioquia", 105, 15, { align: "center" });
 
-      // Capturar mapa (centrado y optimizado)
+      // Captura del mapa
       const mapCanvas = await html2canvas(document.getElementById("map"), {
         useCORS: true,
         scale: 1.5
@@ -146,7 +164,7 @@
       const imgX = (210 - imgWidth) / 2;
       pdf.addImage(imgData, "PNG", imgX, 25, imgWidth, imgHeight);
 
-      // Convertir tabla a datos
+      // Tabla de información
       const rows = [];
       document.querySelectorAll("#info-content tr").forEach(tr => {
         const tds = tr.querySelectorAll("td");
@@ -162,7 +180,7 @@
         headStyles: { fillColor: [0, 153, 102] }
       });
 
-      // Recuadro gris para coordenadas y fecha
+      // Coordenadas y fecha
       const finalY = pdf.lastAutoTable.finalY + 5;
       pdf.setDrawColor(200);
       pdf.setFillColor(245);
@@ -173,8 +191,10 @@
       pdf.text(`Coordenadas centro: ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)} (EPSG:4326)`, 15, finalY + 6);
       pdf.text(`Fecha y hora: ${new Date().toLocaleString()}`, 15, finalY + 12);
 
-      pdf.save("Predio_Briceno.pdf");
+      // Guardar PDF
+      pdf.save("Info_Predio_Briceno.pdf");
     };
   </script>
+
 </body>
 </html>
