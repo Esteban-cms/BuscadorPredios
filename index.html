@@ -201,129 +201,154 @@ coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none"
 document.getElementById("btnUbicacion").onclick=()=>map.locate({setView:true,maxZoom:17});
 
 // ================= DESCARGAR PDF =================
-// ================= DESCARGAR PDF =================
 document.getElementById("btnDescargarInfo").onclick = async () => {
   const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const margin = 15;
 
-  // Obtener información del panel
-  const infoText = document.getElementById("info-content").innerText.split('\n');
-  const infoPairs = infoText.map(line => {
-    const parts = line.split(':');
-    return [parts[0]?.trim() || '', parts.slice(1).join(':').trim() || ''];
-  });
+  // --- Mensaje de espera ---
+  const aviso = document.createElement("div");
+  aviso.innerText = "⏳ Generando PDF, por favor espere...";
+  aviso.style.position = "fixed";
+  aviso.style.top = "50%";
+  aviso.style.left = "50%";
+  aviso.style.transform = "translate(-50%, -50%)";
+  aviso.style.background = "rgba(0,0,0,0.8)";
+  aviso.style.color = "#fff";
+  aviso.style.padding = "20px 30px";
+  aviso.style.borderRadius = "10px";
+  aviso.style.fontSize = "16px";
+  aviso.style.zIndex = "9999";
+  aviso.style.textAlign = "center";
+  document.body.appendChild(aviso);
 
-  // Calcular centro del mapa
-  const center = map.getCenter();
-  const coordText = `Centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`;
-  const fechaText = `Generado: ${new Date().toLocaleString("es-CO")}`;
+  try {
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const margin = 15;
 
-  // Título
-  pdf.setFontSize(14);
-  pdf.text("Información del Predio", margin, 20);
-
-  // Crear tabla principal
-  pdf.autoTable({
-    startY: 28,
-    head: [['Campo', 'Valor']],
-    body: infoPairs,
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [0, 230, 118], textColor: 255 },
-    theme: 'grid',
-    margin: { left: margin },
-    tableWidth: 180
-  });
-
-  // Mini mapa del predio (solo perímetro, fondo blanco, con sombra)
-  if (resaltado) {
-    const miniDiv = document.createElement("div");
-    miniDiv.style.width = "250px";
-    miniDiv.style.height = "200px";
-    miniDiv.style.background = "#fff";
-    miniDiv.style.border = "2px solid #000";
-    miniDiv.style.borderRadius = "6px";
-    miniDiv.style.boxShadow = "0 4px 12px rgba(0,0,0,0.35)";
-    miniDiv.style.overflow = "hidden";
-
-    const miniMap = L.map(miniDiv, {
-      attributionControl: false,
-      zoomControl: false,
-      dragging: false
+    // Obtener información del panel
+    const infoText = document.getElementById("info-content").innerText.split('\n');
+    const infoPairs = infoText.map(line => {
+      const parts = line.split(':');
+      return [parts[0]?.trim() || '', parts.slice(1).join(':').trim() || ''];
     });
 
-    const bbox = resaltado.getBounds();
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { opacity: 0 }).addTo(miniMap);
-    L.geoJSON(resaltado.toGeoJSON(), {
-      style: { color: "black", weight: 2, fillOpacity: 0 }
-    }).addTo(miniMap);
-    miniMap.fitBounds(bbox, { padding: [10, 10] });
+    // Calcular centro del mapa
+    const center = map.getCenter();
+    const coordText = `Centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`;
+    const fechaText = `Generado: ${new Date().toLocaleString("es-CO")}`;
 
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Título
+    pdf.setFontSize(14);
+    pdf.text("Información del Predio", margin, 20);
 
-    const miniCanvas = await html2canvas(miniDiv, { backgroundColor: "#fff", scale: 3 });
-    const miniImg = miniCanvas.toDataURL("image/png");
+    // Crear tabla principal
+    pdf.autoTable({
+      startY: 28,
+      head: [['Campo', 'Valor']],
+      body: infoPairs,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [0, 230, 118], textColor: 255 },
+      theme: 'grid',
+      margin: { left: margin },
+      tableWidth: 180
+    });
 
-    const mapX = pdf.internal.pageSize.getWidth() - 250 - margin + 55;
-    const mapY = 28;
-    pdf.addImage(miniImg, "PNG", mapX, mapY, 70, 55);
+    // Mini mapa del predio (solo perímetro)
+    if (resaltado) {
+      const miniDiv = document.createElement("div");
+      miniDiv.style.width = "250px";
+      miniDiv.style.height = "200px";
+      miniDiv.style.background = "#fff";
+      miniDiv.style.border = "2px solid #000";
+      miniDiv.style.borderRadius = "6px";
+      miniDiv.style.boxShadow = "0 4px 12px rgba(0,0,0,0.35)";
+      miniDiv.style.overflow = "hidden";
 
+      const miniMap = L.map(miniDiv, {
+        attributionControl: false,
+        zoomControl: false,
+        dragging: false
+      });
+
+      const bbox = resaltado.getBounds();
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { opacity: 0 }).addTo(miniMap);
+      L.geoJSON(resaltado.toGeoJSON(), {
+        style: { color: "black", weight: 2, fillOpacity: 0 }
+      }).addTo(miniMap);
+      miniMap.fitBounds(bbox, { padding: [10, 10] });
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const miniCanvas = await html2canvas(miniDiv, { backgroundColor: "#fff", scale: 3 });
+      const miniImg = miniCanvas.toDataURL("image/png");
+
+      const mapX = pdf.internal.pageSize.getWidth() - 250 - margin + 55;
+      const mapY = 28;
+      pdf.addImage(miniImg, "PNG", mapX, mapY, 70, 55);
+
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.rect(mapX, mapY, 70, 55);
+    }
+
+    // === MAPA PRINCIPAL CON FLECHA NORTE ===
+    const mapContainer = document.getElementById("map");
+
+    // Clon temporal del mapa para añadir la flecha norte
+    const tempDiv = mapContainer.cloneNode(true);
+    tempDiv.style.position = "absolute";
+    tempDiv.style.top = "-9999px";
+    document.body.appendChild(tempDiv);
+
+    // Crear la flecha norte
+    const northArrow = document.createElement("div");
+    northArrow.style.position = "absolute";
+    northArrow.style.top = "10px";
+    northArrow.style.left = "10px";
+    northArrow.style.width = "40px";
+    northArrow.style.height = "40px";
+    northArrow.style.background = "rgba(255, 255, 255, 0.9)";
+    northArrow.style.border = "1.5px solid black";
+    northArrow.style.borderRadius = "4px";
+    northArrow.style.display = "flex";
+    northArrow.style.flexDirection = "column";
+    northArrow.style.alignItems = "center";
+    northArrow.style.justifyContent = "center";
+    northArrow.style.fontWeight = "bold";
+    northArrow.style.fontFamily = "sans-serif";
+    northArrow.innerHTML = "↑<br>N";
+    northArrow.style.fontSize = "16px";
+    tempDiv.appendChild(northArrow);
+
+    const mapCanvas = await html2canvas(tempDiv, { useCORS: true, scale: 2 });
+    const imgData = mapCanvas.toDataURL("image/png");
+    tempDiv.remove();
+
+    const mapY = pdf.autoTable.previous.finalY + 10;
+    pdf.addImage(imgData, "PNG", margin, mapY, 180, 100);
+
+    // Borde negro
     pdf.setDrawColor(0, 0, 0);
     pdf.setLineWidth(0.5);
-    pdf.rect(mapX, mapY, 70, 55);
+    pdf.rect(margin, mapY, 180, 100);
+
+    // Coordenadas y fecha
+    pdf.setFontSize(9);
+    pdf.text(coordText, margin, mapY + 110);
+    pdf.text(fechaText, margin, mapY + 115);
+
+    // Guardar PDF
+    pdf.save(`Predio_${infoPairs[0][1] || "Info"}.pdf`);
+  } catch (err) {
+    alert("❌ Error al generar el PDF: " + err.message);
+    console.error(err);
+  } finally {
+    // Quitar el aviso al terminar
+    aviso.remove();
   }
-
-  // === MAPA PRINCIPAL CON FLECHA NORTE ===
-  const mapContainer = document.getElementById("map");
-
-  // Clon temporal del mapa para añadir flecha norte sin alterar el original
-  const tempDiv = mapContainer.cloneNode(true);
-  tempDiv.style.position = "absolute";
-  tempDiv.style.top = "-9999px";
-  document.body.appendChild(tempDiv);
-
-  // Crear la flecha norte (rosa simple)
-  const northArrow = document.createElement("div");
-  northArrow.style.position = "absolute";
-  northArrow.style.top = "10px";
-  northArrow.style.left = "10px";
-  northArrow.style.width = "40px";
-  northArrow.style.height = "40px";
-  northArrow.style.background = "rgba(255, 255, 255, 0.9)";
-  northArrow.style.border = "1.5px solid black";
-  northArrow.style.borderRadius = "4px";
-  northArrow.style.display = "flex";
-  northArrow.style.flexDirection = "column";
-  northArrow.style.alignItems = "center";
-  northArrow.style.justifyContent = "center";
-  northArrow.style.fontWeight = "bold";
-  northArrow.style.fontFamily = "sans-serif";
-  northArrow.innerHTML = "↑<br>N";
-  northArrow.style.fontSize = "16px";
-  tempDiv.appendChild(northArrow);
-
-  const mapCanvas = await html2canvas(tempDiv, { useCORS: true, scale: 2 });
-  const imgData = mapCanvas.toDataURL("image/png");
-  tempDiv.remove(); // limpiar el clon
-
-  const mapY = pdf.autoTable.previous.finalY + 10;
-  pdf.addImage(imgData, "PNG", margin, mapY, 180, 100);
-
-  // Borde negro al mapa principal
-  pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.5);
-  pdf.rect(margin, mapY, 180, 100);
-
-  // Coordenadas y fecha al final
-  pdf.setFontSize(9);
-  pdf.text(coordText, margin, mapY + 110);
-  pdf.text(fechaText, margin, mapY + 115);
-
-  // Guardar PDF
-  pdf.save(`Predio_${infoPairs[0][1] || "Info"}.pdf`);
 };
 
 </script>
 </body>
 </html>
+
 
