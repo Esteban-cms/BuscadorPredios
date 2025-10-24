@@ -11,6 +11,14 @@
 <style>
   html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
   #map { height:100%; width:100%; margin-left:310px; }
+
+  /* --- borde mapa --- */
+  .leaflet-container {
+    border: 2px solid #000;       /* borde negro delgado */
+    box-shadow: 0 0 8px rgba(0,0,0,0.6); /* sombra ligera */
+    border-radius: 6px;           /* esquinas suaves */
+  }
+
   #sidebar { position:absolute; top:0; left:0; width:310px; height:100%; background:#111; color:white;
     padding:15px; box-shadow:3px 0 10px rgba(0,0,0,0.4); overflow-y:auto; z-index:1000;}
   #sidebar h2 { text-align:center; color:#00e676; margin-bottom:10px;}
@@ -190,110 +198,27 @@ const coordModal=document.getElementById("coordModal");
 document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
 document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
-  // ================= DESCARGA PDF MEJORADA =================
-document.getElementById("btnDescargarInfo").onclick = async () => {
-  if (!resaltado) return alert("Selecciona un predio primero.");
+document.getElementById("btnUbicacion").onclick=()=>map.locate({setView:true,maxZoom:17});
 
-  // Mensaje de carga
-  const loadingMsg = document.createElement("div");
-  loadingMsg.innerText = "⏳ Generando reporte, por favor espera...";
-  Object.assign(loadingMsg.style, {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    background: "rgba(0,0,0,0.85)",
-    color: "#00e676",
-    padding: "15px 25px",
-    borderRadius: "10px",
-    fontSize: "16px",
-    zIndex: "3000"
-  });
-  document.body.appendChild(loadingMsg);
+// ================= DESCARGAR PDF =================
+document.getElementById("btnDescargarInfo").onclick=async()=>{
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const info=document.getElementById("info-content").innerText;
+  const margin=15;
+  pdf.setFontSize(14); pdf.text("Información del Predio", margin, 20);
+  pdf.setFontSize(10); pdf.text(info.split('\n'), margin, 30);
 
-  try {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const mapCanvas = await html2canvas(document.getElementById("map"), {useCORS:true, scale:2});
+  const imgData = mapCanvas.toDataURL("image/png");
+  pdf.addImage(imgData, "PNG", margin, 80, 180, 100);
 
-    // Título
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
-    pdf.text("Reporte del Predio", 105, 15, { align: "center" });
+  // --- borde negro al mapa en PDF ---
+  pdf.setDrawColor(0,0,0);
+  pdf.setLineWidth(0.5);
+  pdf.rect(margin, 80, 180, 100);
 
-    // Imagen general del mapa
-    const mapCanvas = await html2canvas(document.getElementById("map"), {
-      useCORS: true,
-      scale: 1.3,
-      backgroundColor: "#ffffff"
-    });
-    pdf.addImage(mapCanvas.toDataURL("image/png"), "PNG", 10, 25, 190, 100);
-
-    // Mini mapa centrado con contorno del predio
-    const miniDiv = document.createElement("div");
-    Object.assign(miniDiv.style, {
-      width: "180px",
-      height: "120px",
-      position: "absolute",
-      top: "-10000px"
-    });
-    document.body.appendChild(miniDiv);
-
-    const miniMap = L.map(miniDiv, {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false
-    });
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(miniMap);
-
-    const miniLayer = L.geoJSON(resaltado.toGeoJSON(), {
-      style: { color: "black", weight: 2, fillOpacity: 0.1 }
-    }).addTo(miniMap);
-
-    miniMap.fitBounds(miniLayer.getBounds(), { padding: [10, 10] });
-
-    await new Promise(r => setTimeout(r, 500));
-    const miniCanvas = await html2canvas(miniDiv, {
-      useCORS: true,
-      scale: 1.2,
-      backgroundColor: "#ffffff"
-    });
-    pdf.addImage(miniCanvas.toDataURL("image/png"), "PNG", 125, 30, 70, 50);
-    miniMap.remove();
-    document.body.removeChild(miniDiv);
-
-    // Tabla de información
-    const infoHTML = document.getElementById("info-content").innerText
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l);
-    const rows = infoHTML.map(line => {
-      const [key, ...val] = line.split(":");
-      return [key, val.join(":").trim()];
-    });
-
-    pdf.autoTable({
-      startY: 130,
-      head: [["Campo", "Valor"]],
-      body: rows,
-      theme: "grid",
-      styles: { fontSize: 10 }
-    });
-
-    // Texto inferior (Centro / Generado) en cursiva
-    const center = resaltado.getBounds().getCenter();
-    pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(9);
-    pdf.text(`Centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`, 10, pdf.lastAutoTable.finalY + 10);
-    pdf.text(`Generado: ${new Date().toLocaleString()}`, 10, pdf.lastAutoTable.finalY + 15);
-
-    // Guardar
-    pdf.save(`Predio_${resaltado.feature?.properties?.PK_PREDIOS || "Briceno"}.pdf`);
-  } catch (err) {
-    alert("Error al generar el PDF: " + err.message);
-  } finally {
-    document.body.removeChild(loadingMsg);
-  }
+  pdf.save("Predio_Info.pdf");
 };
 </script>
 </body>
