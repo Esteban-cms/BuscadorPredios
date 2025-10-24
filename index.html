@@ -295,38 +295,6 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
     document.body.removeChild(loadingMsg);
   }
 };
-
-<script>
-// ================= MAPA BASE Y CAPAS =================
-const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
-const map = L.map('map').setView([7.132, -75.569], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
-
-// ======= CONTROLAR UBICACIÓN GPS SIN CAMBIAR ESTILO =======
-document.getElementById("btnUbicacion").onclick = () => {
-  if (!navigator.geolocation) {
-    alert("La geolocalización no está soportada por tu navegador.");
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude, longitude } = pos.coords;
-      map.setView([latitude, longitude], 16);
-      L.circleMarker([latitude, longitude], {
-        radius: 8,
-        color: "#00e676",
-        fillColor: "#00e676",
-        fillOpacity: 0.5
-      }).addTo(map)
-      .bindPopup("📍 Estás aquí")
-      .openPopup();
-    },
-    () => alert("No se pudo obtener tu ubicación.")
-  );
-};
-
-// ===========================================================
 </script>
 </body>
 </html>
-
