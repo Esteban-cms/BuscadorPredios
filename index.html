@@ -200,9 +200,12 @@ document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
 document.getElementById("btnUbicacion").onclick=()=>map.locate({setView:true,maxZoom:17});
 
-// ================= DESCARGAR PDF =================
 document.getElementById("btnDescargarInfo").onclick = async () => {
   const { jsPDF } = window.jspdf;
+  if (!jsPDF || !window.jspdf.autoTable) {
+    alert("❌ No se encontró jsPDF o autoTable. Verifica que estén cargados.");
+    return;
+  }
 
   // --- Mensaje de espera ---
   const aviso = document.createElement("div");
@@ -225,7 +228,7 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
     const margin = 15;
 
     // Obtener información del panel
-    const infoText = document.getElementById("info-content").innerText.split('\n');
+    const infoText = document.getElementById("info-content")?.innerText?.split('\n') || [];
     const infoPairs = infoText.map(line => {
       const parts = line.split(':');
       return [parts[0]?.trim() || '', parts.slice(1).join(':').trim() || ''];
@@ -252,15 +255,14 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
       tableWidth: 180
     });
 
-    // Mini mapa del predio (solo perímetro)
-    if (resaltado) {
+    // Mini mapa (solo perímetro)
+    if (window.resaltado) {
       const miniDiv = document.createElement("div");
       miniDiv.style.width = "250px";
       miniDiv.style.height = "200px";
       miniDiv.style.background = "#fff";
       miniDiv.style.border = "2px solid #000";
       miniDiv.style.borderRadius = "6px";
-      miniDiv.style.boxShadow = "0 4px 12px rgba(0,0,0,0.35)";
       miniDiv.style.overflow = "hidden";
 
       const miniMap = L.map(miniDiv, {
@@ -276,7 +278,7 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
       }).addTo(miniMap);
       miniMap.fitBounds(bbox, { padding: [10, 10] });
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const miniCanvas = await html2canvas(miniDiv, { backgroundColor: "#fff", scale: 3 });
       const miniImg = miniCanvas.toDataURL("image/png");
@@ -292,21 +294,18 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
 
     // === MAPA PRINCIPAL CON FLECHA NORTE ===
     const mapContainer = document.getElementById("map");
-
-    // Clon temporal del mapa para añadir la flecha norte
     const tempDiv = mapContainer.cloneNode(true);
     tempDiv.style.position = "absolute";
     tempDiv.style.top = "-9999px";
     document.body.appendChild(tempDiv);
 
-    // Crear la flecha norte
     const northArrow = document.createElement("div");
     northArrow.style.position = "absolute";
     northArrow.style.top = "10px";
     northArrow.style.left = "10px";
     northArrow.style.width = "40px";
     northArrow.style.height = "40px";
-    northArrow.style.background = "rgba(255, 255, 255, 0.9)";
+    northArrow.style.background = "rgba(255,255,255,0.9)";
     northArrow.style.border = "1.5px solid black";
     northArrow.style.borderRadius = "4px";
     northArrow.style.display = "flex";
@@ -323,26 +322,26 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
     const imgData = mapCanvas.toDataURL("image/png");
     tempDiv.remove();
 
-    const mapY = pdf.autoTable.previous.finalY + 10;
-    pdf.addImage(imgData, "PNG", margin, mapY, 180, 100);
+    // 💡 Solución del error: usar valor por defecto si no existe autoTable.previous
+    const mapYstart = (pdf.lastAutoTable?.finalY || 65) + 10;
+    pdf.addImage(imgData, "PNG", margin, mapYstart, 180, 100);
 
     // Borde negro
     pdf.setDrawColor(0, 0, 0);
     pdf.setLineWidth(0.5);
-    pdf.rect(margin, mapY, 180, 100);
+    pdf.rect(margin, mapYstart, 180, 100);
 
     // Coordenadas y fecha
     pdf.setFontSize(9);
-    pdf.text(coordText, margin, mapY + 110);
-    pdf.text(fechaText, margin, mapY + 115);
+    pdf.text(coordText, margin, mapYstart + 110);
+    pdf.text(fechaText, margin, mapYstart + 115);
 
-    // Guardar PDF
+    // Descargar
     pdf.save(`Predio_${infoPairs[0][1] || "Info"}.pdf`);
   } catch (err) {
-    alert("❌ Error al generar el PDF: " + err.message);
+    alert("❌ Error al generar el PDF: " + (err.message || err));
     console.error(err);
   } finally {
-    // Quitar el aviso al terminar
     aviso.remove();
   }
 };
@@ -350,5 +349,6 @@ document.getElementById("btnDescargarInfo").onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
