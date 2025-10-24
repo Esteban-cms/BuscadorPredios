@@ -42,7 +42,6 @@
 </head>
 
 <body>
-<!-- === TU ESTRUCTURA SE MANTIENE === -->
 <div id="sidebar">
   <img src="escudo_briceno.jpg" alt="Escudo Briceño">
   <h2>Briceño en Mapas</h2>
@@ -99,46 +98,35 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-// === TU CÓDIGO EXISTENTE (idéntico) ===
+// ================= MAPA BASE Y CAPAS =================
+const baseUrl = "https://esteban-cms.github.io/BuscadorPredios/";
+const map = L.map('map').setView([7.132, -75.569], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'}).addTo(map);
 
-// ... (todo tu código de capas, buscador, PDF, etc.) ...
-
-// === 🧭 FUNCIÓN DE UBICACIÓN GPS ===
+// ======= CONTROLAR UBICACIÓN GPS SIN CAMBIAR ESTILO =======
 document.getElementById("btnUbicacion").onclick = () => {
   if (!navigator.geolocation) {
-    alert("La geolocalización no es compatible con este navegador.");
+    alert("La geolocalización no está soportada por tu navegador.");
     return;
   }
-
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      const { latitude, longitude, accuracy } = pos.coords;
-      const latlng = [latitude, longitude];
-
-      // Eliminar marcador anterior si existe
-      if (window.miUbicacion) map.removeLayer(window.miUbicacion);
-      if (window.circuloUbicacion) map.removeLayer(window.circuloUbicacion);
-
-      window.miUbicacion = L.marker(latlng, {
-        title: "Tu ubicación",
-        alt: "Mi ubicación"
-      }).addTo(map).bindPopup(`📍 Tu ubicación<br>Precisión: ${Math.round(accuracy)} m`).openPopup();
-
-      window.circuloUbicacion = L.circle(latlng, {
-        radius: accuracy,
+      const { latitude, longitude } = pos.coords;
+      map.setView([latitude, longitude], 16);
+      L.circleMarker([latitude, longitude], {
+        radius: 8,
         color: "#00e676",
         fillColor: "#00e676",
-        fillOpacity: 0.2
-      }).addTo(map);
-
-      map.flyTo(latlng, 16);
+        fillOpacity: 0.5
+      }).addTo(map)
+      .bindPopup("📍 Estás aquí")
+      .openPopup();
     },
-    (err) => {
-      alert("Error obteniendo ubicación: " + err.message);
-    },
-    { enableHighAccuracy: true, timeout: 10000 }
+    () => alert("No se pudo obtener tu ubicación.")
   );
 };
+
+// ===========================================================
 </script>
 </body>
 </html>
