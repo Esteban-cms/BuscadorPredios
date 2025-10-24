@@ -11,14 +11,6 @@
 <style>
   html, body { height:100%; margin:0; font-family:'Segoe UI', sans-serif; background:#0f0f0f; color:white;}
   #map { height:100%; width:100%; margin-left:310px; }
-
-  /* --- borde mapa --- */
-  .leaflet-container {
-    border: 2px solid #000;       /* borde negro delgado */
-    box-shadow: 0 0 8px rgba(0,0,0,0.6); /* sombra ligera */
-    border-radius: 6px;           /* esquinas suaves */
-  }
-
   #sidebar { position:absolute; top:0; left:0; width:310px; height:100%; background:#111; color:white;
     padding:15px; box-shadow:3px 0 10px rgba(0,0,0,0.4); overflow-y:auto; z-index:1000;}
   #sidebar h2 { text-align:center; color:#00e676; margin-bottom:10px;}
@@ -198,157 +190,111 @@ const coordModal=document.getElementById("coordModal");
 document.getElementById("btnCoordenadas").onclick=()=>coordModal.style.display="flex";
 document.getElementById("btnIrCoord").onclick=()=>{const lat=parseFloat(document.getElementById("latitud").value); const lon=parseFloat(document.getElementById("longitud").value); if(isNaN(lat)||isNaN(lon)) return alert("Coordenadas inválidas"); coordModal.style.display="none"; map.setView([lat,lon],17); L.marker([lat,lon]).addTo(map);};
 coordModal.onclick=e=>{if(e.target===coordModal) coordModal.style.display="none";};
-document.getElementById("btnUbicacion").onclick=()=>map.locate({setView:true,maxZoom:17});
-
+  // ================= DESCARGA PDF MEJORADA =================
 document.getElementById("btnDescargarInfo").onclick = async () => {
-  const { jsPDF } = window.jspdf;
-  if (!jsPDF || !window.jspdf.autoTable) {
-    alert("❌ No se encontró jsPDF o autoTable. Verifica que estén cargados.");
-    return;
-  }
+  if (!resaltado) return alert("Selecciona un predio primero.");
 
-  // --- Mensaje de espera ---
-  const aviso = document.createElement("div");
-  aviso.innerText = "⏳ Generando PDF, por favor espere...";
-  aviso.style.position = "fixed";
-  aviso.style.top = "50%";
-  aviso.style.left = "50%";
-  aviso.style.transform = "translate(-50%, -50%)";
-  aviso.style.background = "rgba(0,0,0,0.8)";
-  aviso.style.color = "#fff";
-  aviso.style.padding = "20px 30px";
-  aviso.style.borderRadius = "10px";
-  aviso.style.fontSize = "16px";
-  aviso.style.zIndex = "9999";
-  aviso.style.textAlign = "center";
-  document.body.appendChild(aviso);
+  // Mensaje de carga
+  const loadingMsg = document.createElement("div");
+  loadingMsg.innerText = "⏳ Generando reporte, por favor espera...";
+  Object.assign(loadingMsg.style, {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "rgba(0,0,0,0.85)",
+    color: "#00e676",
+    padding: "15px 25px",
+    borderRadius: "10px",
+    fontSize: "16px",
+    zIndex: "3000"
+  });
+  document.body.appendChild(loadingMsg);
 
   try {
+    const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const margin = 15;
-
-    // Obtener información del panel
-    const infoText = document.getElementById("info-content")?.innerText?.split('\n') || [];
-    const infoPairs = infoText.map(line => {
-      const parts = line.split(':');
-      return [parts[0]?.trim() || '', parts.slice(1).join(':').trim() || ''];
-    });
-
-    // Calcular centro del mapa
-    const center = map.getCenter();
-    const coordText = `Centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`;
-    const fechaText = `Generado: ${new Date().toLocaleString("es-CO")}`;
 
     // Título
-    pdf.setFontSize(14);
-    pdf.text("Información del Predio", margin, 20);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(16);
+    pdf.text("Reporte del Predio", 105, 15, { align: "center" });
 
-    // Crear tabla principal
-    pdf.autoTable({
-      startY: 28,
-      head: [['Campo', 'Valor']],
-      body: infoPairs,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [0, 230, 118], textColor: 255 },
-      theme: 'grid',
-      margin: { left: margin },
-      tableWidth: 180
+    // Imagen general del mapa
+    const mapCanvas = await html2canvas(document.getElementById("map"), {
+      useCORS: true,
+      scale: 1.3,
+      backgroundColor: "#ffffff"
+    });
+    pdf.addImage(mapCanvas.toDataURL("image/png"), "PNG", 10, 25, 190, 100);
+
+    // Mini mapa centrado con contorno del predio
+    const miniDiv = document.createElement("div");
+    Object.assign(miniDiv.style, {
+      width: "180px",
+      height: "120px",
+      position: "absolute",
+      top: "-10000px"
+    });
+    document.body.appendChild(miniDiv);
+
+    const miniMap = L.map(miniDiv, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false
     });
 
-    // Mini mapa (solo perímetro)
-    if (window.resaltado) {
-      const miniDiv = document.createElement("div");
-      miniDiv.style.width = "250px";
-      miniDiv.style.height = "200px";
-      miniDiv.style.background = "#fff";
-      miniDiv.style.border = "2px solid #000";
-      miniDiv.style.borderRadius = "6px";
-      miniDiv.style.overflow = "hidden";
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(miniMap);
 
-      const miniMap = L.map(miniDiv, {
-        attributionControl: false,
-        zoomControl: false,
-        dragging: false
-      });
+    const miniLayer = L.geoJSON(resaltado.toGeoJSON(), {
+      style: { color: "black", weight: 2, fillOpacity: 0.1 }
+    }).addTo(miniMap);
 
-      const bbox = resaltado.getBounds();
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { opacity: 0 }).addTo(miniMap);
-      L.geoJSON(resaltado.toGeoJSON(), {
-        style: { color: "black", weight: 2, fillOpacity: 0 }
-      }).addTo(miniMap);
-      miniMap.fitBounds(bbox, { padding: [10, 10] });
+    miniMap.fitBounds(miniLayer.getBounds(), { padding: [10, 10] });
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(r => setTimeout(r, 500));
+    const miniCanvas = await html2canvas(miniDiv, {
+      useCORS: true,
+      scale: 1.2,
+      backgroundColor: "#ffffff"
+    });
+    pdf.addImage(miniCanvas.toDataURL("image/png"), "PNG", 125, 30, 70, 50);
+    miniMap.remove();
+    document.body.removeChild(miniDiv);
 
-      const miniCanvas = await html2canvas(miniDiv, { backgroundColor: "#fff", scale: 3 });
-      const miniImg = miniCanvas.toDataURL("image/png");
+    // Tabla de información
+    const infoHTML = document.getElementById("info-content").innerText
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l);
+    const rows = infoHTML.map(line => {
+      const [key, ...val] = line.split(":");
+      return [key, val.join(":").trim()];
+    });
 
-      const mapX = pdf.internal.pageSize.getWidth() - 250 - margin + 55;
-      const mapY = 28;
-      pdf.addImage(miniImg, "PNG", mapX, mapY, 70, 55);
+    pdf.autoTable({
+      startY: 130,
+      head: [["Campo", "Valor"]],
+      body: rows,
+      theme: "grid",
+      styles: { fontSize: 10 }
+    });
 
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(0.5);
-      pdf.rect(mapX, mapY, 70, 55);
-    }
-
-    // === MAPA PRINCIPAL CON FLECHA NORTE ===
-    const mapContainer = document.getElementById("map");
-    const tempDiv = mapContainer.cloneNode(true);
-    tempDiv.style.position = "absolute";
-    tempDiv.style.top = "-9999px";
-    document.body.appendChild(tempDiv);
-
-    const northArrow = document.createElement("div");
-    northArrow.style.position = "absolute";
-    northArrow.style.top = "10px";
-    northArrow.style.left = "10px";
-    northArrow.style.width = "40px";
-    northArrow.style.height = "40px";
-    northArrow.style.background = "rgba(255,255,255,0.9)";
-    northArrow.style.border = "1.5px solid black";
-    northArrow.style.borderRadius = "4px";
-    northArrow.style.display = "flex";
-    northArrow.style.flexDirection = "column";
-    northArrow.style.alignItems = "center";
-    northArrow.style.justifyContent = "center";
-    northArrow.style.fontWeight = "bold";
-    northArrow.style.fontFamily = "sans-serif";
-    northArrow.innerHTML = "↑<br>N";
-    northArrow.style.fontSize = "16px";
-    tempDiv.appendChild(northArrow);
-
-    const mapCanvas = await html2canvas(tempDiv, { useCORS: true, scale: 2 });
-    const imgData = mapCanvas.toDataURL("image/png");
-    tempDiv.remove();
-
-    // 💡 Solución del error: usar valor por defecto si no existe autoTable.previous
-    const mapYstart = (pdf.lastAutoTable?.finalY || 65) + 10;
-    pdf.addImage(imgData, "PNG", margin, mapYstart, 180, 100);
-
-    // Borde negro
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.5);
-    pdf.rect(margin, mapYstart, 180, 100);
-
-    // Coordenadas y fecha
+    // Texto inferior (Centro / Generado) en cursiva
+    const center = resaltado.getBounds().getCenter();
+    pdf.setFont("helvetica", "italic");
     pdf.setFontSize(9);
-    pdf.text(coordText, margin, mapYstart + 110);
-    pdf.text(fechaText, margin, mapYstart + 115);
+    pdf.text(`Centro: ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} (EPSG:4326)`, 10, pdf.lastAutoTable.finalY + 10);
+    pdf.text(`Generado: ${new Date().toLocaleString()}`, 10, pdf.lastAutoTable.finalY + 15);
 
-    // Descargar
-    pdf.save(`Predio_${infoPairs[0][1] || "Info"}.pdf`);
+    // Guardar
+    pdf.save(`Predio_${resaltado.feature?.properties?.PK_PREDIOS || "Briceno"}.pdf`);
   } catch (err) {
-    alert("❌ Error al generar el PDF: " + (err.message || err));
-    console.error(err);
+    alert("Error al generar el PDF: " + err.message);
   } finally {
-    aviso.remove();
+    document.body.removeChild(loadingMsg);
   }
 };
-
 </script>
 </body>
 </html>
-
-
-
